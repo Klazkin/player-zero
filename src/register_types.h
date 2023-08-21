@@ -4,4 +4,7 @@
 void initialize_example_module();
 void uninitialize_example_module();
 
+void init_sunit_module();
+void uninit_sunit_module();
+
 #endif // GDEXAMPLE_REGISTER_TYPES_H
