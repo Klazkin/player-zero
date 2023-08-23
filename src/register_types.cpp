@@ -2,6 +2,7 @@
 
 #include "gdexample.h"
 #include "sunit.h"
+#include "action.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -20,6 +21,7 @@ void initialize_example_module(ModuleInitializationLevel p_level)
     if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
     {
         ClassDB::register_class<SUnit>();
+        ClassDB::register_class<Action>();
     }
 }
 
