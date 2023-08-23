@@ -20,7 +20,6 @@ void SUnit::_bind_methods()
 
 SUnit::SUnit()
 {
-    // Initialize any variables here.
     max_health = 20;
     health = health;
     speed = 1;
@@ -36,7 +35,7 @@ void SUnit::set_max_health(const int p_max_health)
     max_health = p_max_health;
 }
 
-double SUnit::get_max_health() const
+int SUnit::get_max_health() const
 {
     return max_health;
 }
@@ -46,7 +45,7 @@ void SUnit::set_health(const int p_health)
     health = p_health;
 }
 
-double SUnit::get_health() const
+int SUnit::get_health() const
 {
     return health;
 }
@@ -56,7 +55,7 @@ void SUnit::set_speed(const int p_speed)
     speed = p_speed;
 }
 
-double SUnit::get_speed() const
+int SUnit::get_speed() const
 {
     return speed;
 }

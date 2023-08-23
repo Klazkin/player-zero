@@ -23,13 +23,13 @@ namespace godot
         ~SUnit();
 
         void set_health(const int p_health);
-        double get_health() const;
+        int get_health() const;
 
         void set_max_health(const int p_max_health);
-        double get_max_health() const;
+        int get_max_health() const;
 
         void set_speed(const int p_speed);
-        double get_speed() const;
+        int get_speed() const;
     };
 
 }
