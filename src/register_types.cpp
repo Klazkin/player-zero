@@ -1,7 +1,6 @@
 #include "register_types.h"
 
-#include "gdexample.h"
-#include "sunit.h"
+#include "unit.h"
 #include "action.h"
 
 #include <gdextension_interface.h>
@@ -13,15 +12,9 @@ using namespace godot;
 
 void initialize_example_module(ModuleInitializationLevel p_level)
 {
-    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE)
-    {
-        ClassDB::register_class<GDExample>();
-    }
-
     if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
     {
-        ClassDB::register_class<SUnit>();
-        ClassDB::register_class<Action>();
+        ClassDB::register_class<Unit>();
     }
 }
 

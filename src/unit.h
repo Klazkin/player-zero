@@ -1,14 +1,14 @@
-#ifndef SUNIT_H
-#define SUNIT_H
+#ifndef UNIT_H
+#define UNIT_H
 
-#include <godot_cpp/classes/object.hpp>
+#include "surface_element.h"
 
 namespace godot
 {
 
-    class SUnit : public Object
+    class Unit : public SurfaceElement
     {
-        GDCLASS(SUnit, Object)
+        GDCLASS(Unit, SurfaceElement)
 
     private:
         int health;
@@ -19,8 +19,8 @@ namespace godot
         static void _bind_methods();
 
     public:
-        SUnit();
-        ~SUnit();
+        Unit();
+        ~Unit();
 
         void set_health(const int p_health);
         int get_health() const;
