@@ -16,6 +16,10 @@ namespace godot
     public:
         SurfaceElement();
         ~SurfaceElement();
+
+        int hit(int damage);
+
+        void kill();
     };
 
 }

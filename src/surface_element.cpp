@@ -1,13 +1,24 @@
 #include "surface_element.h"
 
-void godot::SurfaceElement::_bind_methods()
+using namespace godot;
+
+void SurfaceElement::_bind_methods()
 {
 }
 
-godot::SurfaceElement::SurfaceElement()
+SurfaceElement::SurfaceElement()
 {
 }
 
-godot::SurfaceElement::~SurfaceElement()
+SurfaceElement::~SurfaceElement()
+{
+}
+
+int SurfaceElement::hit(int damage)
+{
+    return 0;
+}
+
+void SurfaceElement::kill()
 {
 }

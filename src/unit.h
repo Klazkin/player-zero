@@ -22,6 +22,8 @@ namespace godot
         Unit();
         ~Unit();
 
+        int hit(int damage);
+
         void set_health(const int p_health);
         int get_health() const;
 

@@ -1,12 +1,16 @@
 #include "register_types.h"
 
 #include "unit.h"
-#include "action.h"
+// #include "action.h"
+#include "surface_element.h"
+#include "surface.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
+
+// TODO TEST FUNCTIONS WITH CUSTOM CLASSES
 
 using namespace godot;
 
@@ -14,7 +18,12 @@ void initialize_example_module(ModuleInitializationLevel p_level)
 {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
     {
+        ClassDB::register_class<SurfaceElement>();
         ClassDB::register_class<Unit>();
+        ClassDB::register_class<LosCheckResult>();
+        ClassDB::register_abstract_class<AbstractCollisionProvider>();
+        ClassDB::register_abstract_class<AbstractPathfindingProvider>();
+        // ClassDB::register_class<Surface>();
     }
 }
 
