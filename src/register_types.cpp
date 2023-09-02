@@ -1,9 +1,9 @@
 #include "register_types.h"
 
 #include "unit.h"
-// #include "action.h"
 #include "surface_element.h"
 #include "surface.h"
+#include "action.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -23,8 +23,9 @@ void initialize_example_module(ModuleInitializationLevel p_level)
         ClassDB::register_class<LosCheckResult>();
         ClassDB::register_abstract_class<AbstractCollisionProvider>();
         ClassDB::register_abstract_class<AbstractPathfindingProvider>();
-        // ClassDB::register_class<Surface>();
-    }
+        ClassDB::register_class<Surface>();
+        ClassDB::register_abstract_class<ActionRegistry>();
+        }
 }
 
 void uninitialize_example_module(ModuleInitializationLevel p_level)

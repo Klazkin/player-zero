@@ -5,11 +5,26 @@ using namespace godot;
 
 void Surface::_bind_methods()
 {
+    ClassDB::bind_method(D_METHOD("set_pathfinding_provider", "p_provider"), &Surface::set_pathfinding_provider);
+    ClassDB::bind_method(D_METHOD("get_pathfinding_provider"), &Surface::get_pathfinding_provider);
+    ClassDB::add_property("Surface", PropertyInfo(Variant::NIL, "pathfinding_provider"), "set_pathfinding_provider", "get_pathfinding_provider");
+
+    ClassDB::bind_method(D_METHOD("set_collision_provider", "p_provider"), &Surface::set_collision_provider);
+    ClassDB::bind_method(D_METHOD("get_collision_provider"), &Surface::get_collision_provider);
+    ClassDB::add_property("Surface", PropertyInfo(Variant::NIL, "collision_provider"), "set_collision_provider", "get_collision_provider");
+
+    ClassDB::bind_method(D_METHOD("place", "p_pos", "p_element"), &Surface::place);
+    ClassDB::bind_method(D_METHOD("move", "p_pos", "p_element"), &Surface::move);
+    ClassDB::bind_method(D_METHOD("get_occupation", "p_pos"), &Surface::get_occupation);
+    ClassDB::bind_method(D_METHOD("clear_occupation", "p_pos"), &Surface::clear_occupation);
+    ClassDB::bind_method(D_METHOD("get_all_units"), &Surface::get_all_units);
 }
 
 Surface::Surface()
 {
-    // std::unordered_map<Vector2i, SurfaceElement> occupations;
+    std::map<Vector2i, SurfaceElement> occupations;
+    pathfinding_provider = nullptr;
+    collision_provider = nullptr;
 }
 
 Surface::~Surface()
@@ -18,40 +33,45 @@ Surface::~Surface()
 
 void Surface::set_pathfinding_provider(AbstractPathfindingProvider *p_provider)
 {
-    // pathfinding_provider = p_provider;
+    pathfinding_provider = p_provider;
 }
 
-AbstractPathfindingProvider Surface::get_pathfinding_provider() const
+AbstractPathfindingProvider *Surface::get_pathfinding_provider() const
 {
     return pathfinding_provider;
 }
 
 void Surface::set_collision_provider(AbstractCollisionProvider *p_provider)
 {
-    // collision_provider = p_provider;
+    collision_provider = p_provider;
 }
 
-AbstractCollisionProvider Surface::get_collision_provider() const
+AbstractCollisionProvider *Surface::get_collision_provider() const
 {
     return collision_provider;
 }
 
-void Surface::occupy(const Vector2i p_pos, const SurfaceElement p_element)
+void godot::Surface::place(const Vector2i &p_pos, SurfaceElement *p_element)
 {
 }
 
-void Surface::reoccupy(const Vector2i p_pos, const SurfaceElement p_element)
+void godot::Surface::move(const Vector2i &p_pos, SurfaceElement *p_element)
 {
 }
 
-SurfaceElement Surface::get_occupation(const Vector2i p_pos) const
+SurfaceElement *Surface::get_occupation(const Vector2i &p_pos) const
 {
-    return SurfaceElement();
+    return nullptr;
 }
 
-SurfaceElement Surface::clear_occupation(const Vector2i p_pos) const
+SurfaceElement *Surface::clear_occupation(const Vector2i &p_pos) const
 {
-    return SurfaceElement();
+    return nullptr;
+}
+
+TypedArray<Unit> Surface::get_all_units() const
+{
+    return TypedArray<Unit>();
 }
 
 void LosCheckResult::_bind_methods()
@@ -99,7 +119,7 @@ void AbstractCollisionProvider::_bind_methods()
     ClassDB::bind_method(D_METHOD("getLosCheck", "from", "to"), &AbstractCollisionProvider::getLosCheck);
 }
 
-LosCheckResult *AbstractCollisionProvider::getLosCheck(const Vector2i &from, const Vector2i &to)
+LosCheckResult *AbstractCollisionProvider::getLosCheck(const Vector2i &from, const Vector2i &to) // TODO ACTUALLY ABSTRACT METHOD
 {
     return nullptr;
 }
@@ -109,6 +129,13 @@ void AbstractPathfindingProvider::_bind_methods()
     ClassDB::bind_method(D_METHOD("getPath", "from", "to"), &AbstractPathfindingProvider::getPath);
 }
 
-void AbstractPathfindingProvider::getPath(const Vector2i &from, const Vector2i &to)
+TypedArray<Vector2i> AbstractPathfindingProvider::getPath(const Vector2i &from, const Vector2i &to) // TODO ACTUALLY ABSTRACT METHOD
 {
+    TypedArray<Vector2i> arr;
+
+    arr.resize(2);
+    arr[0] = Vector2i(1, 2);
+    arr[1] = Vector2i(2, 3);
+
+    return arr;
 }
