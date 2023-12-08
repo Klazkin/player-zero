@@ -22,7 +22,7 @@ void Surface::_bind_methods()
 
 Surface::Surface()
 {
-    std::map<Vector2i, SurfaceElement> occupations;
+    std::map<Vector2i, SurfaceElement *> occupations;
     pathfinding_provider = nullptr;
     collision_provider = nullptr;
 }
@@ -51,11 +51,15 @@ AbstractCollisionProvider *Surface::get_collision_provider() const
     return collision_provider;
 }
 
-void godot::Surface::place(const Vector2i &p_pos, SurfaceElement *p_element)
+void Surface::place(const Vector2i &p_pos, SurfaceElement *p_element)
 {
+    if (occupations.count(p_pos) > 0)
+        return;
+
+    occupations[p_pos] = p_element;
 }
 
-void godot::Surface::move(const Vector2i &p_pos, SurfaceElement *p_element)
+void Surface::move(const Vector2i &p_pos, SurfaceElement *p_element)
 {
 }
 

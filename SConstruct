@@ -29,4 +29,7 @@ else:
         source=sources,
     )
 
+executable = env.Program(target='my_executable', source=sources)
+
 Default(library)
+Default(executable)

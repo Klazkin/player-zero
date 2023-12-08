@@ -1,8 +1,15 @@
 #include "handlers.h"
 
+using namespace godot;
+
 void register_handlers()
 {
-    godot::ActionRegistry::register_action("wrathspark", Wrathspark::check, Wrathspark::cast);
+    ActionRegistry::register_action("wrathspark", Wrathspark::check, Wrathspark::cast);
+}
+
+void register_combinations()
+{
+    ActionRegistry::register_combination("act", "act", "act");
 }
 
 bool Wrathspark::check(CastInfo cast_info)
@@ -12,6 +19,6 @@ bool Wrathspark::check(CastInfo cast_info)
 
 void Wrathspark::cast(CastInfo cast_info)
 {
-    godot::SurfaceElement resident = *cast_info.surface.get_occupation(cast_info.position); // null unsafe
+    SurfaceElement resident = *cast_info.surface.get_occupation(cast_info.position); // null unsafe
     resident.hit(4);
 }
