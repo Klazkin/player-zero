@@ -3,3 +3,4 @@ src/*.obj
 .vscode
 .idea
 standalone_runnable.*
+thirdparty
