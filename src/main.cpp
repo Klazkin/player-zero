@@ -1,7 +1,9 @@
 #include "main.h"
 #include <iostream>
 #include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/memory.hpp>
+#include <godot_cpp/core/math.hpp>
+#include <godot_cpp/variant/vector2i.hpp>
+#include <godot_cpp/variant/vector2i.hpp>
 #include "unit.h"
 #include "register_types.h"
 
@@ -9,20 +11,29 @@ using namespace godot;
 
 int main(int argc, char const *argv[])
 {
-
     std::cout << "Test" << std::endl;
+
+    std::cout << "Simple function " << Math::rad_to_deg(10.0) << std::endl;
+
+    Vector2i vec;
+    vec.x = 50;
+    vec.y = 12;
+
+    vec = vec * 2;
+
+    std::cout << "Vec function " << vec.length() << std::endl;
+
+    // Unit unit;
+    // initialize_example_module(MODULE_INITIALIZATION_LEVEL_CORE);
 
     ClassDB::register_class<Unit>();
 
-    std::cout << "Registered" << std::endl;
+    std::cout << "registered unit." << std::endl;
 
-    // Assuming `Unit` has a default constructor
-    Unit *unit = memnew(Unit());
+    auto unit = memnew(Unit);
 
-    // Print some information if needed
-    std::cout << "Unit Health: " << unit->get_max_health() << std::endl;
+    std::cout << "deleting unit." << std::endl;
 
-    // Delete the allocated object
     memdelete(unit);
 
     std::cout << "Closing." << std::endl;

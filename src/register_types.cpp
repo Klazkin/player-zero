@@ -5,21 +5,17 @@
 #include "surface.h"
 #include "action.h"
 #include "handlers.h"
-#include <iostream>
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
 
-// TODO TEST FUNCTIONS WITH CUSTOM CLASSES
-
 using namespace godot;
 
 void initialize_example_module(ModuleInitializationLevel p_level)
 {
-    std::cout << "!!!!REACHED!!!" << std::endl;
-    if (p_level == GDEXTENSION_INITIALIZATION_CORE) // Todo changed from server level!
+    if (p_level == GDEXTENSION_INITIALIZATION_CORE)
     {
         register_handlers();
         register_combinations();
@@ -47,7 +43,7 @@ extern "C"
 
         init_obj.register_initializer(initialize_example_module);
         init_obj.register_terminator(uninitialize_example_module);
-        init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_CORE); // Todo changed from server level!
+        init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_CORE);
 
         return init_obj.init();
     }

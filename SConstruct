@@ -29,7 +29,7 @@ else:
         source=sources,
     )
 
-executable = env.Program(target='my_executable', source=sources)
+executable = env.Program(target='standalone_runnable', source=sources)
 
 Default(library)
 Default(executable)

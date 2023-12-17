@@ -2,3 +2,4 @@ src/*.obj
 .sconsign.dblite
 .vscode
 .idea
+standalone_runnable.*
