@@ -1,30 +1,64 @@
 #include "ortbinding.h"
-#include "onnxruntime_c_api.h"
+#include "onnxruntime_cxx_api.h"
+#include <assert.h>
 #include <godot_cpp/core/class_db.hpp>
+#include <array>
+#include <cmath>
+#include <algorithm>
+#include <iostream>
 
 using namespace godot;
 
 void ORTBinding::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("dummy_method"), &ORTBinding::dummy_method);
+    ClassDB::bind_method(D_METHOD("predict", "p_array"), &ORTBinding::predict);
 }
 
-void ORTBinding::dummy_method()
+float _predict(std::array<float, 12> input)
 {
-    const OrtApi *g_ort = NULL;
-    g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
-    if (!g_ort)
+    std::array<float, 1> output{};
+
+    // std::fill(input.begin(), input.end(), 0.f);
+    // std::fill(output.begin(), output.end(), 0.f);
+
+    Ort::Env env{ORT_LOGGING_LEVEL_VERBOSE};
+    Ort::Session session_{env, L"model.onnx", Ort::SessionOptions{nullptr}};
+
+    Ort::Value input_tensor_{nullptr};
+    std::array<int64_t, 2> input_shape_{1, 12};
+
+    Ort::Value output_tensor_{nullptr};
+    std::array<int64_t, 2> output_shape_{1, 1};
+
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+
+    input_tensor_ = Ort::Value::CreateTensor<float>(memory_info, input.data(), input.size(), input_shape_.data(), input_shape_.size());
+    output_tensor_ = Ort::Value::CreateTensor<float>(memory_info, output.data(), output.size(), output_shape_.data(), output_shape_.size());
+
+    const char *input_names[] = {"input_12"}; // TODO define proper names for input/output tensors
+    const char *output_names[] = {"dense_14"};
+
+    Ort::RunOptions run_options;
+    session_.Run(run_options, input_names, &input_tensor_, 1, output_names, &output_tensor_, 1);
+
+    return output[0];
+}
+
+float ORTBinding::predict(const TypedArray<float> &p_array)
+{
+    if (p_array.size() != 12)
     {
-        fprintf(stderr, "Failed to init ONNX Runtime engine.\n");
-        return;
+        return -1.f;
     }
 
-    OrtEnv *env;
-    g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env);
-    if (env != NULL)
+    std::array<float, 12> input{};
+
+    for (int i = 0; i < 12; i++)
     {
-        printf("Enviroment running.");
+        input[i] = (float)p_array[i];
     }
+
+    return _predict(input);
 }
 
 ORTBinding::ORTBinding()

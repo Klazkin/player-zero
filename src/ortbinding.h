@@ -3,6 +3,8 @@
 
 #include <godot_cpp/classes/object.hpp>
 
+float _predict(std::array<float, 12> input);
+
 namespace godot
 {
 
@@ -14,7 +16,7 @@ namespace godot
         static void _bind_methods();
 
     public:
-        void dummy_method();
+        float predict(const TypedArray<float> &p_array);
 
         ORTBinding();
         ~ORTBinding();
