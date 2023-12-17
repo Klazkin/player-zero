@@ -18,5 +18,5 @@ Describe goal of the issue, the condition for "closing".
 Time Estimate: `0 hours 0 minutes`
 Time spent: `0 hours 0 minutes`
 
-## Additional sources
+## Resources
 ...
