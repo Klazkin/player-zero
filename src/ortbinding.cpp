@@ -11,21 +11,15 @@ using namespace godot;
 
 void ORTBinding::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("dummy_method"), &ORTBinding::dummy_method);
+    ClassDB::bind_method(D_METHOD("predict", "p_array"), &ORTBinding::predict);
 }
 
-void ORTBinding::dummy_method()
+float _predict(std::array<float, 12> input)
 {
-    _procedure();
-}
-
-void _procedure()
-{
-    std::array<float, 12> input{};
     std::array<float, 1> output{};
 
-    std::fill(input.begin(), input.end(), 0.f);
-    std::fill(output.begin(), output.end(), 0.f);
+    // std::fill(input.begin(), input.end(), 0.f);
+    // std::fill(output.begin(), output.end(), 0.f);
 
     Ort::Env env{ORT_LOGGING_LEVEL_VERBOSE};
     Ort::Session session_{env, L"model.onnx", Ort::SessionOptions{nullptr}};
@@ -41,13 +35,30 @@ void _procedure()
     input_tensor_ = Ort::Value::CreateTensor<float>(memory_info, input.data(), input.size(), input_shape_.data(), input_shape_.size());
     output_tensor_ = Ort::Value::CreateTensor<float>(memory_info, output.data(), output.size(), output_shape_.data(), output_shape_.size());
 
-    const char *input_names[] = {"input_12"};
+    const char *input_names[] = {"input_12"}; // TODO define proper names for input/output tensors
     const char *output_names[] = {"dense_14"};
 
     Ort::RunOptions run_options;
     session_.Run(run_options, input_names, &input_tensor_, 1, output_names, &output_tensor_, 1);
 
-    std::cout << output[0] << std::endl;
+    return output[0];
+}
+
+float ORTBinding::predict(const TypedArray<float> &p_array)
+{
+    if (p_array.size() != 12)
+    {
+        return -1.f;
+    }
+
+    std::array<float, 12> input{};
+
+    for (int i = 0; i < 12; i++)
+    {
+        input[i] = (float)p_array[i];
+    }
+
+    return _predict(input);
 }
 
 ORTBinding::ORTBinding()

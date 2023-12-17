@@ -13,6 +13,7 @@ using namespace godot;
 int main(int argc, char const *argv[])
 {
     std::cout << "Starting Procedure." << std::endl;
-    _procedure();
+    std::array<float, 12> input{};
+    _predict(input);
     std::cout << "Procedure finished." << std::endl;
 }
