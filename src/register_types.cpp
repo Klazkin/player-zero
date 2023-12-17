@@ -5,6 +5,7 @@
 #include "surface.h"
 #include "action.h"
 #include "handlers.h"
+#include "ortbinding.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -15,19 +16,20 @@ using namespace godot;
 
 void initialize_example_module(ModuleInitializationLevel p_level)
 {
-    if (p_level == GDEXTENSION_INITIALIZATION_CORE)
-    {
-        register_handlers();
-        register_combinations();
+    if (p_level != GDEXTENSION_INITIALIZATION_CORE)
+        return;
 
-        ClassDB::register_class<SurfaceElement>();
-        ClassDB::register_class<Unit>();
-        ClassDB::register_class<LosCheckResult>();
-        ClassDB::register_abstract_class<AbstractCollisionProvider>();
-        ClassDB::register_abstract_class<AbstractPathfindingProvider>();
-        ClassDB::register_class<Surface>();
-        ClassDB::register_abstract_class<ActionRegistry>();
-    }
+    register_handlers();
+    register_combinations();
+
+    ClassDB::register_class<SurfaceElement>();
+    ClassDB::register_class<Unit>();
+    ClassDB::register_class<LosCheckResult>();
+    ClassDB::register_abstract_class<AbstractCollisionProvider>();
+    ClassDB::register_abstract_class<AbstractPathfindingProvider>();
+    ClassDB::register_class<Surface>();
+    ClassDB::register_abstract_class<ActionRegistry>();
+    ClassDB::register_class<ORTBinding>();
 }
 
 void uninitialize_example_module(ModuleInitializationLevel p_level)
