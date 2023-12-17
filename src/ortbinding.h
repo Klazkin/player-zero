@@ -3,6 +3,8 @@
 
 #include <godot_cpp/classes/object.hpp>
 
+void _procedure();
+
 namespace godot
 {
 
