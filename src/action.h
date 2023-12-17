@@ -51,7 +51,7 @@ namespace godot
     {
         GDCLASS(ActionRegistry, Object)
 
-        private:
+    private:
         static std::unordered_map<std::string, ActionFunctions> function_registry;
         static std::unordered_map<CombinationKey, std::string, CombinationKey::Hash> combination_registry;
 

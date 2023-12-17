@@ -4,7 +4,8 @@
 #include "action.h"
 #include "surface_element.h"
 
-static void register_handlers();
+void register_handlers();
+void register_combinations();
 
 namespace Wrathspark
 {

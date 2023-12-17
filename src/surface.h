@@ -62,7 +62,7 @@ namespace godot
         GDCLASS(Surface, Object)
 
     private:
-        std::map<Vector2i, SurfaceElement> occupations;
+        std::map<Vector2i, SurfaceElement *> occupations;
         AbstractPathfindingProvider *pathfinding_provider;
         AbstractCollisionProvider *collision_provider;
 
