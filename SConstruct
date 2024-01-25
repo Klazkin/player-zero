@@ -3,6 +3,7 @@ import os
 import sys
 
 env = SConscript("godot-cpp/SConstruct")
+extension_path = 'gaf6/bin/'
 
 # For reference:
 # - CCFLAGS are compilation flags shared between C and C++
@@ -30,18 +31,18 @@ sources = Glob("src/*.cpp")
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "gaf6/bin/libgdexample.{}.{}.framework/libgdexample.{}.{}".format(
+        extension_path + "libgdexample.{}.{}.framework/libgdexample.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
         source=sources,
     )
 else:
     library = env.SharedLibrary(
-        "gaf6/bin/libgdexample{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        extension_path + "gaf6/bin/libgdexample{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
         source=sources,
     )
 
-executable = env.Program(target='standalone_runnable', source=sources)
+executable = env.Program(target=extension_path + 'standalone_runnable', source=sources)
 
 Default(library)
 Default(executable)
