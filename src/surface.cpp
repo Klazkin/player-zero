@@ -1,5 +1,7 @@
 #include "surface.h"
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/godot.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
 
@@ -13,75 +15,116 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_collision_provider"), &Surface::get_collision_provider);
     ClassDB::add_property("Surface", PropertyInfo(Variant::NIL, "collision_provider"), "set_collision_provider", "get_collision_provider");
 
-    ClassDB::bind_method(D_METHOD("place", "p_pos", "p_element"), &Surface::place);
-    ClassDB::bind_method(D_METHOD("move", "p_pos", "p_element"), &Surface::move);
-    ClassDB::bind_method(D_METHOD("get_occupation", "p_pos"), &Surface::get_occupation);
-    ClassDB::bind_method(D_METHOD("clear_occupation", "p_pos"), &Surface::clear_occupation);
-    ClassDB::bind_method(D_METHOD("get_all_units"), &Surface::get_all_units);
+    ClassDB::bind_method(D_METHOD("place_element", "p_pos", "p_element"), &Surface::place_element);
+    ClassDB::bind_method(D_METHOD("move_element", "p_pos_from", "p_pos_to"), &Surface::move_element);
+    ClassDB::bind_method(D_METHOD("get_element", "p_pos"), &Surface::get_element);
+    ClassDB::bind_method(D_METHOD("lift_element", "p_pos"), &Surface::lift_element);
+    ClassDB::bind_method(D_METHOD("get_only_units"), &Surface::get_only_units);
 }
 
 Surface::Surface()
 {
-    std::map<Vector2i, SurfaceElement *> occupations;
-    pathfinding_provider = nullptr;
-    collision_provider = nullptr;
+    std::map<Vector2i, Ref<SurfaceElement>> element_positions;
+    Ref<PathfindingProvider> pathfinding_provider;
+    Ref<CollisionProvider> collision_provider;
 }
 
 Surface::~Surface()
 {
 }
 
-void Surface::set_pathfinding_provider(AbstractPathfindingProvider *p_provider)
+void Surface::set_pathfinding_provider(const Ref<PathfindingProvider> p_provider)
 {
     pathfinding_provider = p_provider;
 }
 
-AbstractPathfindingProvider *Surface::get_pathfinding_provider() const
+Ref<PathfindingProvider> Surface::get_pathfinding_provider() const
 {
     return pathfinding_provider;
 }
 
-void Surface::set_collision_provider(AbstractCollisionProvider *p_provider)
+void Surface::set_collision_provider(const Ref<CollisionProvider> p_provider)
 {
     collision_provider = p_provider;
 }
-
-AbstractCollisionProvider *Surface::get_collision_provider() const
+Ref<CollisionProvider> Surface::get_collision_provider() const
 {
     return collision_provider;
 }
 
-void Surface::place(const Vector2i &p_pos, SurfaceElement *p_element)
+void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element)
 {
-    if (occupations.count(p_pos) > 0)
+    if (!p_element.is_valid() ||
+        p_element->get_is_on_surface() ||
+        element_positions.count(p_pos) > 0)
+    {
+        UtilityFunctions::print("Did not place");
+        UtilityFunctions::print(!p_element.is_valid());
+        UtilityFunctions::print(p_element.is_null());
+        UtilityFunctions::print(p_element->get_is_on_surface());
+        UtilityFunctions::print(element_positions.count(p_pos) > 0);
         return;
-
-    occupations[p_pos] = p_element;
+    }
+    p_element->set_is_on_surface(true);
+    element_positions[p_pos] = p_element;
 }
 
-void Surface::move(const Vector2i &p_pos, SurfaceElement *p_element)
+bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to)
 {
+    Ref<SurfaceElement> element = get_element(p_pos_from);
+    if (element.is_null() || element_positions.count(p_pos_to) > 0)
+    {
+        return false;
+    }
+
+    element_positions.erase(p_pos_from);
+    element_positions[p_pos_to] = element;
+    return true;
 }
 
-SurfaceElement *Surface::get_occupation(const Vector2i &p_pos) const
+Ref<SurfaceElement> Surface::get_element(const Vector2i &p_pos) const
 {
-    return nullptr;
+    if (element_positions.count(p_pos) == 0)
+    {
+        Ref<SurfaceElement> empty;
+        return empty;
+    }
+
+    return element_positions.at(p_pos);
 }
 
-SurfaceElement *Surface::clear_occupation(const Vector2i &p_pos) const
+Ref<SurfaceElement> Surface::lift_element(const Vector2i &p_pos)
 {
-    return nullptr;
+    Ref<SurfaceElement> element = get_element(p_pos);
+
+    if (element.is_valid())
+    {
+        element_positions.erase(p_pos);
+        element->set_is_on_surface(false);
+    }
+
+    return element;
 }
 
-TypedArray<Unit> Surface::get_all_units() const
+TypedArray<Unit> Surface::get_only_units() const
 {
-    return TypedArray<Unit>();
+    TypedArray<Unit> arr;
+
+    for (auto pair : element_positions) // TODO check if the map contians empty cells
+    {
+        if (pair.second->_is_unit())
+        {
+            arr.append(pair.second);
+        }
+    }
+
+    return arr;
 }
 
 void LosCheckResult::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("set_collision_object", "p_object"), &LosCheckResult::set_collision_object);
-    ClassDB::bind_method(D_METHOD("get_collision_object"), &LosCheckResult::get_collision_object);
+    ClassDB::bind_method(D_METHOD("set_collision_object", "p_object"), &LosCheckResult::set_collision_element);
+    ClassDB::bind_method(D_METHOD("get_collision_object"), &LosCheckResult::get_collision_element);
     ClassDB::add_property("LosCheckResult", PropertyInfo(Variant::NIL, "collision_object"), "set_collision_object", "get_collision_object");
 
     ClassDB::bind_method(D_METHOD("set_collision_position", "p_pos"), &LosCheckResult::set_collision_position);
@@ -91,7 +134,7 @@ void LosCheckResult::_bind_methods()
 
 LosCheckResult::LosCheckResult()
 {
-    element = nullptr;
+    Ref<SurfaceElement> element;
 }
 
 LosCheckResult::~LosCheckResult()
@@ -103,7 +146,7 @@ void LosCheckResult::set_collision_position(const Vector2i &p_pos)
     collided_at = p_pos;
 }
 
-void LosCheckResult::set_collision_object(SurfaceElement *p_element)
+void LosCheckResult::set_collision_element(Ref<SurfaceElement> p_element)
 {
     element = p_element;
 }
@@ -113,27 +156,27 @@ Vector2i LosCheckResult::get_collision_position() const
     return collided_at;
 }
 
-SurfaceElement *LosCheckResult::get_collision_object() const
+Ref<SurfaceElement> LosCheckResult::get_collision_element() const // TODO in future may also include level geometry as a potential collider
 {
     return element;
 }
 
-void AbstractCollisionProvider::_bind_methods()
+void CollisionProvider::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("getLosCheck", "from", "to"), &AbstractCollisionProvider::getLosCheck);
+    ClassDB::bind_method(D_METHOD("getLosCheck", "from", "to"), &CollisionProvider::getLosCheck);
 }
 
-LosCheckResult *AbstractCollisionProvider::getLosCheck(const Vector2i &from, const Vector2i &to) // TODO ACTUALLY ABSTRACT METHOD
+Ref<LosCheckResult> CollisionProvider::getLosCheck(const Vector2i &from, const Vector2i &to)
 {
     return nullptr;
 }
 
-void AbstractPathfindingProvider::_bind_methods()
+void PathfindingProvider::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("getPath", "from", "to"), &AbstractPathfindingProvider::getPath);
+    ClassDB::bind_method(D_METHOD("getPath", "from", "to"), &PathfindingProvider::getPath);
 }
 
-TypedArray<Vector2i> AbstractPathfindingProvider::getPath(const Vector2i &from, const Vector2i &to) // TODO ACTUALLY ABSTRACT METHOD
+TypedArray<Vector2i> PathfindingProvider::getPath(const Vector2i &from, const Vector2i &to)
 {
     TypedArray<Vector2i> arr;
 
