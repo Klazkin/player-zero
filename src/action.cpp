@@ -1,4 +1,5 @@
 #include "action.h"
+
 using namespace godot;
 
 CombinationKey::CombinationKey(const ActionIdentifier p_action1, const ActionIdentifier p_action2)
@@ -17,13 +18,8 @@ bool CombinationKey::operator==(const CombinationKey &other) const
            (action1 == other.action2 && action2 == other.action1);
 }
 
-ActionFunctions::ActionFunctions(ActionCheckType p_check_func, ActionCastType p_cast_func)
-    : check_func(p_check_func), cast_func(p_cast_func)
-{
-}
-
-std::unordered_map<ActionIdentifier, ActionFunctions> function_registry;
-std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> combination_registry;
+std::unordered_map<ActionIdentifier, ActionFunctions> Action::function_registry;
+std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> Action::combination_registry;
 
 void Action::_bind_methods()
 {
@@ -75,7 +71,7 @@ ActionIdentifier Action::get_combination(const ActionIdentifier action1, const A
 
 void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func)
 {
-    function_registry[action] = ActionFunctions(check_func, cast_func);
+    function_registry[action] = {check_func, cast_func};
 }
 
 bool Action::is_action_registered(ActionIdentifier action)
@@ -90,22 +86,10 @@ void Action::register_combination(ActionIdentifier action1, ActionIdentifier act
 
 bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
 {
-    CastInfo cast;
-    cast.action = action;
-    cast.surface = surface;
-    cast.caster = caster;
-    cast.position = position;
-
-    return _is_castable(cast);
+    return _is_castable({action, surface, caster, position});
 }
 
 void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
 {
-    CastInfo cast;
-    cast.action = action;
-    cast.surface = surface;
-    cast.caster = caster;
-    cast.position = position;
-
-    _cast_action(cast);
+    _cast_action({action, surface, caster, position});
 }

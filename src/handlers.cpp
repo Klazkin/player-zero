@@ -4,7 +4,6 @@ using namespace godot;
 
 void register_handlers()
 {
-    // TODO USE ENUMS FOR ACTIONS(
     Action::register_action(WRATHSPARK, check_cell_taken, cast_wrathspark);
     Action::register_action(GROUNDRAISE, check_cell_free, cast_groundraise);
 }

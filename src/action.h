@@ -63,8 +63,6 @@ struct ActionFunctions
 {
     ActionCheckType check_func; // Todo ask Siim about const ActionCheckType &check_func pattern instead
     ActionCastType cast_func;
-
-    ActionFunctions(ActionCheckType p_check_func, ActionCastType p_cast_func);
 };
 
 class Action : public Object // Abstract class
