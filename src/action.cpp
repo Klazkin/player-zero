@@ -1,14 +1,14 @@
 #include "action.h"
 using namespace godot;
 
-CombinationKey::CombinationKey(const std::string &pa1, const std::string &pa2)
-    : action1(pa1), action2(pa2)
+CombinationKey::CombinationKey(const ActionIdentifier p_action1, const ActionIdentifier p_action2)
+    : action1(p_action1), action2(p_action2)
 {
 }
 
 std::size_t CombinationKey::Hash::operator()(const CombinationKey &c) const
 {
-    return std::hash<std::string>()(c.action1) ^ (std::hash<std::string>()(c.action2));
+    return std::hash<int>()(c.action1) ^ std::hash<int>()(c.action2);
 }
 
 bool CombinationKey::operator==(const CombinationKey &other) const
@@ -17,8 +17,13 @@ bool CombinationKey::operator==(const CombinationKey &other) const
            (action1 == other.action2 && action2 == other.action1);
 }
 
-std::unordered_map<std::string, ActionFunctions> Action::function_registry;
-std::unordered_map<CombinationKey, std::string, CombinationKey::Hash> Action::combination_registry;
+ActionFunctions::ActionFunctions(ActionCheckType p_check_func, ActionCastType p_cast_func)
+    : check_func(p_check_func), cast_func(p_cast_func)
+{
+}
+
+std::unordered_map<ActionIdentifier, ActionFunctions> function_registry;
+std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> combination_registry;
 
 void Action::_bind_methods()
 {
@@ -27,6 +32,7 @@ void Action::_bind_methods()
     ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
     ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
 
+    BIND_ENUM_CONSTANT(INVALID)
     BIND_ENUM_CONSTANT(IDLE)
     BIND_ENUM_CONSTANT(WRATHSPARK);
     BIND_ENUM_CONSTANT(GROUNDRAISE);
@@ -38,39 +44,54 @@ void Action::_bind_methods()
     BIND_ENUM_CONSTANT(NETHERSWAP);
 }
 
-void Action::register_action(std::string action_name, ActionCheckType check_func, ActionCastType cast_func)
+bool Action::_is_castable(const CastInfo &cast_info)
 {
-    ActionFunctions af;
-    af.check_func = check_func;
-    af.cast_func = cast_func;
-    function_registry[action_name] = af;
+    if (!is_action_registered(cast_info.action))
+    {
+        return false;
+    }
+
+    return function_registry[cast_info.action].check_func(cast_info);
 }
 
-bool Action::is_action_registered(std::string action_name)
+void Action::_cast_action(const CastInfo &cast_info)
 {
-    return function_registry.count(action_name) > 0;
+    function_registry[cast_info.action].cast_func(cast_info);
 }
 
-bool Action::_is_castable(CastInfo cast_info)
+bool Action::has_combination(const ActionIdentifier action1, const ActionIdentifier action2)
 {
-    // todo search action registered
-    return function_registry[cast_info.action_name].check_func(cast_info);
+    return combination_registry.count(CombinationKey(action1, action2)) > 0;
 }
 
-void Action::_cast_action(CastInfo cast_info)
+ActionIdentifier Action::get_combination(const ActionIdentifier action1, const ActionIdentifier action2)
 {
-    function_registry[cast_info.action_name].cast_func(cast_info);
+    if (has_combination(action1, action2))
+    {
+        return combination_registry[CombinationKey(action1, action2)];
+    }
+    return INVALID;
 }
 
-void Action::register_combination(std::string action1, std::string action2, std::string action_result)
+void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func)
+{
+    function_registry[action] = ActionFunctions(check_func, cast_func);
+}
+
+bool Action::is_action_registered(ActionIdentifier action)
+{
+    return function_registry.count(action) > 0;
+}
+
+void Action::register_combination(ActionIdentifier action1, ActionIdentifier action2, ActionIdentifier action_result)
 {
     combination_registry[CombinationKey(action1, action2)] = action_result;
 }
 
-bool Action::is_castable(const String &action_name, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
+bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
 {
     CastInfo cast;
-    cast.action_name = "wrathspark"; // unimplemented
+    cast.action = action;
     cast.surface = surface;
     cast.caster = caster;
     cast.position = position;
@@ -78,38 +99,13 @@ bool Action::is_castable(const String &action_name, Ref<Surface> surface, Ref<Un
     return _is_castable(cast);
 }
 
-bool Action::cast_action(const String &action_name, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
+void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
 {
     CastInfo cast;
-    cast.action_name = "wrathspark"; // unimplemented
+    cast.action = action;
     cast.surface = surface;
     cast.caster = caster;
     cast.position = position;
 
     _cast_action(cast);
-    return false; // Todo determine if it should be a void
-}
-
-bool Action::has_combination(const String &action1, const String &action2)
-{
-    return false;
-}
-
-String Action::get_combination(const String &action1, const String &action2)
-{
-    return String(); // Todo implement
-}
-
-bool Action::_has_combination(std::string action1, std::string action2)
-{
-    return combination_registry.count(CombinationKey(action1, action2)) > 0;
-}
-
-std::string Action::_get_combination(std::string action1, std::string action2)
-{
-    if (_has_combination(action1, action2))
-    {
-        return combination_registry[CombinationKey(action1, action2)];
-    }
-    return "";
 }

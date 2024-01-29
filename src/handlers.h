@@ -7,21 +7,10 @@
 void register_handlers();
 void register_combinations();
 
-/*
-GroundRaise
-BloodDrawing
-Tread
-CoilBlade
-Wrathspark
-EternalShacles
-Altar
-NetherSwap
-*/
+bool check_cell_free(const CastInfo &cast);
+bool check_cell_taken(const CastInfo &cast);
 
-bool check_cell_free(CastInfo &cast);
-bool check_cell_taken(CastInfo &cast);
-
-void cast_wrathspark(CastInfo &cast);
-void cast_groundraise(CastInfo &cast);
+void cast_wrathspark(const CastInfo &cast);
+void cast_groundraise(const CastInfo &cast);
 
 #endif
