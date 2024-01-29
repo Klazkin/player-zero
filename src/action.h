@@ -2,7 +2,7 @@
 #define ACTION_H
 
 #include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/classes/object.hpp>
+#include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/vector2i.hpp>
 
@@ -47,9 +47,9 @@ struct ActionFunctions
 
 namespace godot
 {
-    class ActionRegistry : public Object
+    class ActionRegistry : public RefCounted
     {
-        GDCLASS(ActionRegistry, Object)
+        GDCLASS(ActionRegistry, RefCounted)
 
     private:
         static std::unordered_map<std::string, ActionFunctions> function_registry;
@@ -68,7 +68,7 @@ namespace godot
         static bool is_action_registered(std::string action_name);
         static void register_combination(std::string action1, std::string action2, std::string action_result);
 
-        // front-end functions
+        // gd extension functions
         static bool is_castable(const String &action_name, Surface *surface, Unit *caster, const Vector2i &position);
         static bool cast_action(const String &action_name, Surface *surface, Unit *caster, const Vector2i &position);
         static bool has_combination(const String &action1, const String &action2);

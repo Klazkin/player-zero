@@ -66,3 +66,8 @@ int Unit::get_speed() const
 {
     return speed;
 }
+
+bool Unit::_is_unit() const
+{
+    return true;
+}

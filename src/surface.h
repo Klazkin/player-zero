@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include <godot_cpp/classes/object.hpp>
+#include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/vector2i.hpp>
 
 #include "surface_element.h"
@@ -13,13 +13,13 @@
 namespace godot
 {
 
-    class LosCheckResult : public Object
+    class LosCheckResult : public RefCounted
     {
-        GDCLASS(LosCheckResult, Object)
+        GDCLASS(LosCheckResult, RefCounted)
 
     private:
         Vector2i collided_at;
-        SurfaceElement *element;
+        Ref<SurfaceElement> element;
 
     protected:
         static void _bind_methods();
@@ -29,26 +29,26 @@ namespace godot
         ~LosCheckResult();
 
         void set_collision_position(const Vector2i &p_pos);
-        void set_collision_object(SurfaceElement *p_element);
+        void set_collision_element(Ref<SurfaceElement> p_element);
 
         Vector2i get_collision_position() const;
-        SurfaceElement *get_collision_object() const;
+        Ref<SurfaceElement> get_collision_element() const;
     };
 
-    class AbstractCollisionProvider : public Object
+    class CollisionProvider : public RefCounted
     {
-        GDCLASS(AbstractCollisionProvider, Object);
+        GDCLASS(CollisionProvider, RefCounted);
 
     protected:
         static void _bind_methods();
 
     public:
-        LosCheckResult *getLosCheck(const Vector2i &from, const Vector2i &to);
+        Ref<LosCheckResult> getLosCheck(const Vector2i &from, const Vector2i &to);
     };
 
-    class AbstractPathfindingProvider : public Object
+    class PathfindingProvider : public RefCounted
     {
-        GDCLASS(AbstractPathfindingProvider, Object);
+        GDCLASS(PathfindingProvider, RefCounted);
 
     protected:
         static void _bind_methods();
@@ -57,14 +57,14 @@ namespace godot
         TypedArray<Vector2i> getPath(const Vector2i &from, const Vector2i &to);
     };
 
-    class Surface : public Object
+    class Surface : public RefCounted
     {
-        GDCLASS(Surface, Object)
+        GDCLASS(Surface, RefCounted)
 
     private:
-        std::map<Vector2i, SurfaceElement *> occupations;
-        AbstractPathfindingProvider *pathfinding_provider;
-        AbstractCollisionProvider *collision_provider;
+        std::map<Vector2i, Ref<SurfaceElement>> element_positions;
+        Ref<PathfindingProvider> pathfinding_provider;
+        Ref<CollisionProvider> collision_provider;
 
     protected:
         static void _bind_methods();
@@ -73,19 +73,20 @@ namespace godot
         Surface();
         ~Surface();
 
-        void set_pathfinding_provider(AbstractPathfindingProvider *p_provider);
-        AbstractPathfindingProvider *get_pathfinding_provider() const;
+        void set_pathfinding_provider(const Ref<PathfindingProvider> p_provider);
+        Ref<PathfindingProvider> get_pathfinding_provider() const;
 
-        void set_collision_provider(AbstractCollisionProvider *p_provider);
-        AbstractCollisionProvider *get_collision_provider() const;
+        void set_collision_provider(const Ref<CollisionProvider> p_provider);
+        Ref<CollisionProvider> get_collision_provider() const;
 
-        void place(const Vector2i &p_pos, SurfaceElement *p_element);
-        void move(const Vector2i &p_pos, SurfaceElement *p_element);
+        bool is_position_available(const Vector2i &p_pos) const;
+        void place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element);
+        bool move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to);
 
-        SurfaceElement *get_occupation(const Vector2i &p_pos) const;
-        SurfaceElement *clear_occupation(const Vector2i &p_pos) const;
+        Ref<SurfaceElement> get_element(const Vector2i &p_pos) const;
+        Ref<SurfaceElement> lift_element(const Vector2i &p_pos);
 
-        TypedArray<Unit> get_all_units() const; // bad implementation pattern
+        TypedArray<Unit> get_only_units() const; // bad implementation pattern
     };
 
 }

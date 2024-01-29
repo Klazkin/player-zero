@@ -25,8 +25,8 @@ void initialize_example_module(ModuleInitializationLevel p_level)
     ClassDB::register_class<SurfaceElement>();
     ClassDB::register_class<Unit>();
     ClassDB::register_class<LosCheckResult>();
-    ClassDB::register_abstract_class<AbstractCollisionProvider>();
-    ClassDB::register_abstract_class<AbstractPathfindingProvider>();
+    // ClassDB::register_abstract_class<CollisionProvider>();
+    // ClassDB::register_abstract_class<PathfindingProvider>();
     ClassDB::register_class<Surface>();
     ClassDB::register_abstract_class<ActionRegistry>();
     ClassDB::register_class<ORTBinding>();

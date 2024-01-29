@@ -32,6 +32,8 @@ namespace godot
 
         void set_speed(const int p_speed);
         int get_speed() const;
+
+        bool _is_unit() const override;
     };
 
 }

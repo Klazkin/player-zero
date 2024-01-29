@@ -38,7 +38,7 @@ if env["platform"] == "macos":
     )
 else:
     library = env.SharedLibrary(
-        extension_path + "gaf6/bin/libgdexample{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        extension_path + "libgdexample{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
         source=sources,
     )
 
