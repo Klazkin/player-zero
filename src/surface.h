@@ -79,6 +79,7 @@ namespace godot
         void set_collision_provider(const Ref<CollisionProvider> p_provider);
         Ref<CollisionProvider> get_collision_provider() const;
 
+        bool is_position_available(const Vector2i &p_pos) const;
         void place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element);
         bool move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to);
 

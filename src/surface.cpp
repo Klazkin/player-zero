@@ -15,6 +15,7 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_collision_provider"), &Surface::get_collision_provider);
     ClassDB::add_property("Surface", PropertyInfo(Variant::NIL, "collision_provider"), "set_collision_provider", "get_collision_provider");
 
+    ClassDB::bind_method(D_METHOD("is_position_available", "p_pos"), &Surface::is_position_available);
     ClassDB::bind_method(D_METHOD("place_element", "p_pos", "p_element"), &Surface::place_element);
     ClassDB::bind_method(D_METHOD("move_element", "p_pos_from", "p_pos_to"), &Surface::move_element);
     ClassDB::bind_method(D_METHOD("get_element", "p_pos"), &Surface::get_element);
@@ -52,11 +53,16 @@ Ref<CollisionProvider> Surface::get_collision_provider() const
     return collision_provider;
 }
 
+bool Surface::is_position_available(const Vector2i &p_pos) const
+{
+    return element_positions.count(p_pos) == 0;
+}
+
 void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element)
 {
     if (!p_element.is_valid() ||
         p_element->get_is_on_surface() ||
-        element_positions.count(p_pos) > 0)
+        !is_position_available(p_pos))
     {
         UtilityFunctions::print("Did not place");
         UtilityFunctions::print(!p_element.is_valid());
@@ -72,7 +78,7 @@ void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_e
 bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to)
 {
     Ref<SurfaceElement> element = get_element(p_pos_from);
-    if (element.is_null() || element_positions.count(p_pos_to) > 0)
+    if (element.is_null() || !is_position_available(p_pos_to))
     {
         return false;
     }
@@ -84,7 +90,7 @@ bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to)
 
 Ref<SurfaceElement> Surface::get_element(const Vector2i &p_pos) const
 {
-    if (element_positions.count(p_pos) == 0)
+    if (is_position_available(p_pos))
     {
         Ref<SurfaceElement> empty;
         return empty;
