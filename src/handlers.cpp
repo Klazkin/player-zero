@@ -4,23 +4,34 @@ using namespace godot;
 
 void register_handlers()
 {
-    // TODO USE ENUMS FOR ACTIONS
-    ActionRegistry::register_action("wrathspark", Wrathspark::check, Wrathspark::cast);
+    // TODO USE ENUMS FOR ACTIONS(
+    Action::register_action("wrathspark", check_cell_taken, cast_wrathspark);
+    Action::register_action("groundraise", check_cell_free, cast_groundraise);
 }
 
 void register_combinations()
 {
-    ActionRegistry::register_combination("act", "act", "act");
+    Action::register_combination("a", "b", "c");
 }
 
-bool Wrathspark::check(CastInfo cast_info)
+bool check_cell_free(CastInfo &cast)
 {
-    // return cast_info.surface.get_occupation(cast_info.position) != nullptr;
-    return false;
+    return cast.surface->is_position_available(cast.position);
 }
 
-void Wrathspark::cast(CastInfo cast_info)
+bool check_cell_taken(CastInfo &cast)
 {
-    // SurfaceElement resident = *cast_info.surface.get_occupation(cast_info.position); // null unsafe
-    // resident.hit(4);
+    return !check_cell_free(cast);
+}
+
+void cast_wrathspark(CastInfo &cast)
+{
+    Ref<SurfaceElement> target = cast.surface->get_element(cast.position);
+    target->hit(4);
+}
+
+void cast_groundraise(CastInfo &cast)
+{
+    Ref<SurfaceElement> ground_element = memnew(SurfaceElement);
+    cast.surface->place_element(cast.position, ground_element);
 }

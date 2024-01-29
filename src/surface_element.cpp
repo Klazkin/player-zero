@@ -15,7 +15,7 @@ SurfaceElement::~SurfaceElement()
 {
 }
 
-int SurfaceElement::hit(int damage) const
+int SurfaceElement::hit(int damage)
 {
     return 0;
 }

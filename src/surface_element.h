@@ -20,9 +20,9 @@ namespace godot
         SurfaceElement();
         ~SurfaceElement();
 
-        int hit(int damage) const;
+        virtual int hit(int damage);
 
-        void kill();
+        virtual void kill();
 
         bool get_is_on_surface() const;
         void set_is_on_surface(const int p_is_on_surface);

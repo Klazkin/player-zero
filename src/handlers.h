@@ -7,10 +7,21 @@
 void register_handlers();
 void register_combinations();
 
-namespace Wrathspark
-{
-    static bool check(CastInfo cast_info);
-    static void cast(CastInfo cast_info);
-}
+/*
+GroundRaise
+BloodDrawing
+Tread
+CoilBlade
+Wrathspark
+EternalShacles
+Altar
+NetherSwap
+*/
+
+bool check_cell_free(CastInfo &cast);
+bool check_cell_taken(CastInfo &cast);
+
+void cast_wrathspark(CastInfo &cast);
+void cast_groundraise(CastInfo &cast);
 
 #endif
