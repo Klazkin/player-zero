@@ -10,7 +10,8 @@ void register_handlers()
     Action::register_action(GROUNDRAISE, check_cell_free, cast_groundraise);
     Action::register_action(TREAD, check_cell_free, cast_tread);
     Action::register_action(NETHERSWAP, check_cell_taken, cast_swap);
-    Action::register_action(COILBLADE, check_is_direction_valid, cast_coildblade);
+    Action::register_action(COILBLADE, check_is_direction_valid, [](const CastInfo &cast)
+                            { multicaster(check_cell_taken, cast_wrathspark, generate_coilblade_points(), true, cast); });
 }
 
 void register_combinations()
@@ -83,55 +84,48 @@ void cast_swap(const CastInfo &cast)
     cast.surface->place_element(cast.target, cast.caster);
 }
 
-void cast_coildblade(const CastInfo &cast)
-// const PackedVector2Array points,
-// const ActionCheckType check_func,
-// const ActionCastType cast_func
-// const bool rotate)
+void multicaster(
+    ActionCheckType local_checker,
+    ActionCastType local_caster,
+    const PackedVector2Array &points,
+    bool is_rotatable,
+    const CastInfo &cast)
 {
+    using RotatorFunc = Vector2i (*)(Vector2i);
+    RotatorFunc lambda_rotate = [](Vector2i p)
+    { return p; };
+
+    if (is_rotatable)
+    {
+        if (cast.target == Vector2i(0, 1))
+            lambda_rotate = [](Vector2i p) -> Vector2i
+            { return Vector2i(p.y, p.x); };
+
+        else if (cast.target == Vector2i(-1, 0))
+            lambda_rotate = [](Vector2i p) -> Vector2i
+            { return Vector2i(-p.x, -p.y); };
+
+        else if (cast.target == Vector2i(0, -1))
+            lambda_rotate = [](Vector2i p) -> Vector2i
+            { return Vector2i(-p.y, -p.x); };
+    }
+
+    for (Point2i point : points)
+    {
+        Point2i loc_point = lambda_rotate(cast.caster->get_position() + point);
+        CastInfo loc_cast = {COILBLADE, cast.surface, cast.caster, loc_point};
+        if (local_checker(loc_cast))
+            local_caster(loc_cast);
+    }
+}
+
+PackedVector2Array generate_coilblade_points()
+{ // temproray solution TODO make a registry for patterns or something
     PackedVector2Array points;
     points.append(Point2i(1, 0));
     points.append(Point2i(2, 0));
     points.append(Point2i(0, 1));
     points.append(Point2i(-1, 0));
     points.append(Point2i(0, -1));
-
-    // TEMPORARY UGLY SOLUTION
-    Direction dir = EAST;
-    if (cast.target == Vector2i(0, 1))
-        dir = NORTH;
-    if (cast.target == Vector2i(-1, 0))
-        dir = WEST;
-    if (cast.target == Vector2i(0, -1))
-        dir = SOUTH;
-
-    UtilityFunctions::print("Direction is " + dir);
-
-    for (Point2i point : points)
-    {
-        // Local cast
-        Point2i loc_point = cast.caster->get_position() + point;
-
-        switch (dir)
-        {
-        case (EAST):
-            break;
-
-        case (NORTH):
-            loc_point = Vector2i(loc_point.y, loc_point.x);
-            break;
-
-        case (WEST):
-            loc_point = Vector2i(-loc_point.x, -loc_point.y);
-            break;
-
-        case (SOUTH):
-            loc_point = Vector2i(-loc_point.y, -loc_point.x);
-            break;
-        }
-
-        CastInfo loc_cast = {COILBLADE, cast.surface, cast.caster, loc_point};
-        if (check_cell_taken(loc_cast))
-            cast_wrathspark(loc_cast);
-    }
+    return points;
 }

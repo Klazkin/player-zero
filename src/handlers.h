@@ -18,6 +18,13 @@ void cast_wrathspark(const CastInfo &cast);
 void cast_groundraise(const CastInfo &cast);
 void cast_tread(const CastInfo &cast);
 void cast_swap(const CastInfo &cast);
-void cast_coildblade(const CastInfo &cast);
+void multicaster(
+    ActionCheckType p_local_checker,
+    ActionCastType p_local_caster,
+    const PackedVector2Array &p_points,
+    bool p_is_rotatable,
+    const CastInfo &cast);
+
+PackedVector2Array generate_coilblade_points();
 
 #endif
