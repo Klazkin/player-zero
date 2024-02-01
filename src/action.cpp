@@ -84,12 +84,12 @@ void Action::register_combination(ActionIdentifier action1, ActionIdentifier act
     combination_registry[CombinationKey(action1, action2)] = action_result;
 }
 
-bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
+bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
 {
-    return _is_castable({action, surface, caster, position});
+    return _is_castable({action, surface, caster, target});
 }
 
-void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position)
+void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
 {
-    _cast_action({action, surface, caster, position});
+    _cast_action({action, surface, caster, target});
 }

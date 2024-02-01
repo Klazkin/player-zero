@@ -38,7 +38,7 @@ struct CastInfo
     ActionIdentifier action; // TODO try making const?
     Ref<Surface> surface;
     Ref<Unit> caster;
-    Vector2i position;
+    Vector2i target;
 };
 
 struct CombinationKey
@@ -85,8 +85,8 @@ public:
     static void register_combination(ActionIdentifier action1, ActionIdentifier action2, ActionIdentifier action_result);
 
     // gd extension functions
-    static bool is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position);
-    static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &position);
+    static bool is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target);
+    static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target);
     static bool has_combination(const ActionIdentifier action1, const ActionIdentifier action2);
     static ActionIdentifier get_combination(const ActionIdentifier action1, const ActionIdentifier action2);
 };
