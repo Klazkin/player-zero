@@ -4,6 +4,11 @@ using namespace godot;
 
 void SurfaceElement::_bind_methods()
 {
+    BIND_ENUM_CONSTANT(EAST);
+    BIND_ENUM_CONSTANT(NORTH);
+    BIND_ENUM_CONSTANT(SOUTH);
+    BIND_ENUM_CONSTANT(WEST);
+
     ClassDB::bind_method(D_METHOD("get_position"), &SurfaceElement::get_position);
     ClassDB::bind_method(D_METHOD("get_is_on_surface"), &SurfaceElement::get_is_on_surface);
 }
