@@ -17,7 +17,9 @@ void Unit::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_speed", "p_speed"), &Unit::set_speed);
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "speed"), "set_speed", "get_speed");
 
-    // ClassDB::bind_method(D_METHOD("hit", "damage"), &Unit::hit);
+    ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
+    ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
+    ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed")));
 }
 
 Unit::Unit()
@@ -35,12 +37,14 @@ Unit::~Unit()
 int Unit::hit(int damage)
 {
     health -= damage;
+    emit_signal("hit", damage);
     return 1; // TODO return damage change
 }
 
 void Unit::set_max_health(const int p_max_health)
 {
     max_health = p_max_health;
+    emit_signal("max_health_changed", p_max_health);
 }
 
 int Unit::get_max_health() const
@@ -51,6 +55,7 @@ int Unit::get_max_health() const
 void Unit::set_health(const int p_health)
 {
     health = p_health;
+    emit_signal("health_changed", p_health);
 }
 
 int Unit::get_health() const
@@ -61,6 +66,7 @@ int Unit::get_health() const
 void Unit::set_speed(const int p_speed)
 {
     speed = p_speed;
+    emit_signal("speed_changed", p_speed);
 }
 
 int Unit::get_speed() const
