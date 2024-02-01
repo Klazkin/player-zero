@@ -6,12 +6,32 @@ using namespace godot;
 
 void register_handlers()
 {
-    Action::register_action(WRATHSPARK, check_cell_taken, cast_wrathspark);
-    Action::register_action(GROUNDRAISE, check_cell_free, cast_groundraise);
-    Action::register_action(TREAD, check_cell_free, cast_tread);
-    Action::register_action(NETHERSWAP, check_cell_taken, cast_swap);
-    Action::register_action(COILBLADE, check_is_direction_valid, [](const CastInfo &cast)
-                            { multicaster(check_cell_taken, cast_wrathspark, generate_coilblade_points(), true, cast); });
+    Action::register_action(
+        WRATHSPARK,
+        [](const CastInfo &c)
+        { return check_cell_taken(c) && check_cast_distance(c, 5); },
+        cast_wrathspark);
+
+    Action::register_action(
+        GROUNDRAISE,
+        check_cell_free,
+        cast_groundraise);
+
+    Action::register_action(
+        TREAD,
+        check_cell_free,
+        cast_tread);
+
+    Action::register_action(
+        NETHERSWAP,
+        check_cell_taken,
+        cast_swap);
+
+    Action::register_action(
+        COILBLADE,
+        check_is_direction_valid,
+        [](const CastInfo &c)
+        { multicaster(c, check_cell_taken, cast_wrathspark, generate_coilblade_points()); });
 }
 
 void register_combinations()
@@ -51,10 +71,10 @@ bool check_is_direction_valid(const CastInfo &cast)
     return valids.count(cast.target) > 0;
 }
 
-// bool check_cast_distance()
-// {
-//     return cast.position
-// }
+bool check_cast_distance(const CastInfo &cast, int max_distance)
+{
+    return (cast.target - cast.caster->get_position()).length_squared() <= max_distance * max_distance;
+}
 
 void cast_wrathspark(const CastInfo &cast)
 {
@@ -85,11 +105,11 @@ void cast_swap(const CastInfo &cast)
 }
 
 void multicaster(
+    const CastInfo &cast,
     ActionCheckType local_checker,
     ActionCastType local_caster,
     const PackedVector2Array &points,
-    bool is_rotatable,
-    const CastInfo &cast)
+    bool is_rotatable)
 {
     using RotatorFunc = Vector2i (*)(Vector2i);
     RotatorFunc lambda_rotate = [](Vector2i p)

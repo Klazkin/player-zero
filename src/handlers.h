@@ -13,17 +13,18 @@ bool check_cell_taken(const CastInfo &cast);
 bool check_unit_only(const CastInfo &cast);
 bool check_self_cast(const CastInfo &cast);
 bool check_is_direction_valid(const CastInfo &cast);
+bool check_cast_distance(const CastInfo &cast, int max_distance);
 
 void cast_wrathspark(const CastInfo &cast);
 void cast_groundraise(const CastInfo &cast);
 void cast_tread(const CastInfo &cast);
 void cast_swap(const CastInfo &cast);
-void multicaster(
-    ActionCheckType p_local_checker,
-    ActionCastType p_local_caster,
-    const PackedVector2Array &p_points,
-    bool p_is_rotatable,
-    const CastInfo &cast);
+
+void multicaster(const CastInfo &cast,
+                 ActionCheckType local_checker,
+                 ActionCastType local_caster,
+                 const PackedVector2Array &points,
+                 bool is_rotatable = true);
 
 PackedVector2Array generate_coilblade_points();
 
