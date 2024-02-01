@@ -1,8 +1,10 @@
 #ifndef ACTION_H
 #define ACTION_H
 
+#include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/vector2i.hpp>
 
@@ -13,20 +15,38 @@
 #include "surface.h"
 #include "unit.h"
 
+using namespace godot;
+
+enum ActionIdentifier
+{
+    INVALID = -1,
+    IDLE,
+    WRATHSPARK,
+    GROUNDRAISE,
+    BLOODDRAWING,
+    TREAD,
+    COILBLADE,
+    ETERNALSHACLES,
+    ALTAR,
+    NETHERSWAP,
+};
+
+VARIANT_ENUM_CAST(ActionIdentifier);
+
 struct CastInfo
 {
-    std::string action_name;
-    godot::Surface surface;
-    godot::Unit caster;
-    godot::Vector2i position;
+    ActionIdentifier action; // TODO try making const?
+    Ref<Surface> surface;
+    Ref<Unit> caster;
+    Vector2i target;
 };
 
 struct CombinationKey
 {
-    std::string action1;
-    std::string action2;
+    const ActionIdentifier action1;
+    const ActionIdentifier action2;
 
-    CombinationKey(const std::string &pa1, const std::string &pa2);
+    CombinationKey(const ActionIdentifier p_action1, const ActionIdentifier p_action2);
 
     struct Hash
     {
@@ -36,44 +56,39 @@ struct CombinationKey
     bool operator==(const CombinationKey &other) const;
 };
 
-using ActionCheckType = bool (*)(CastInfo);
-using ActionCastType = void (*)(CastInfo);
+using ActionCheckType = bool (*)(const CastInfo &);
+using ActionCastType = void (*)(const CastInfo &);
 
 struct ActionFunctions
 {
-    ActionCheckType check_func;
+    ActionCheckType check_func; // Todo ask Siim about const ActionCheckType &check_func pattern instead
     ActionCastType cast_func;
 };
 
-namespace godot
+class Action : public Object // Abstract class
 {
-    class ActionRegistry : public RefCounted
-    {
-        GDCLASS(ActionRegistry, RefCounted)
+    GDCLASS(Action, Object);
 
-    private:
-        static std::unordered_map<std::string, ActionFunctions> function_registry;
-        static std::unordered_map<CombinationKey, std::string, CombinationKey::Hash> combination_registry;
+private:
+    static std::unordered_map<ActionIdentifier, ActionFunctions> function_registry;
+    static std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> combination_registry;
 
-        static bool _is_castable(CastInfo cast_info); // use ActionCheckType
-        static void _cast_action(CastInfo cast_info); // use ActionCastType
-        static bool _has_combination(std::string action1, std::string action2);
-        static std::string _get_combination(std::string action1, std::string action2);
+    static bool _is_castable(const CastInfo &cast_info); // use ActionCheckType
+    static void _cast_action(const CastInfo &cast_info); // use ActionCastType
 
-    protected:
-        static void _bind_methods();
+protected:
+    static void _bind_methods();
 
-    public:
-        static void register_action(std::string action_name, ActionCheckType check_func, ActionCastType cast_func);
-        static bool is_action_registered(std::string action_name);
-        static void register_combination(std::string action1, std::string action2, std::string action_result);
+public:
+    static void register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func);
+    static bool is_action_registered(ActionIdentifier action);
+    static void register_combination(ActionIdentifier action1, ActionIdentifier action2, ActionIdentifier action_result);
 
-        // gd extension functions
-        static bool is_castable(const String &action_name, Surface *surface, Unit *caster, const Vector2i &position);
-        static bool cast_action(const String &action_name, Surface *surface, Unit *caster, const Vector2i &position);
-        static bool has_combination(const String &action1, const String &action2);
-        static String get_combination(const String &action1, const String &action2);
-    };
-}
+    // gd extension functions
+    static bool is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target);
+    static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target);
+    static bool has_combination(const ActionIdentifier action1, const ActionIdentifier action2);
+    static ActionIdentifier get_combination(const ActionIdentifier action1, const ActionIdentifier action2);
+};
 
 #endif

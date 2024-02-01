@@ -12,7 +12,6 @@
 
 namespace godot
 {
-
     class LosCheckResult : public RefCounted
     {
         GDCLASS(LosCheckResult, RefCounted)

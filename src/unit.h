@@ -22,7 +22,7 @@ namespace godot
         Unit();
         ~Unit();
 
-        int hit(int damage);
+        int hit(int damage) override;
 
         void set_health(const int p_health);
         int get_health() const;

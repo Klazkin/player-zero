@@ -1,14 +1,15 @@
 #include "action.h"
+
 using namespace godot;
 
-CombinationKey::CombinationKey(const std::string &pa1, const std::string &pa2)
-    : action1(pa1), action2(pa2)
+CombinationKey::CombinationKey(const ActionIdentifier p_action1, const ActionIdentifier p_action2)
+    : action1(p_action1), action2(p_action2)
 {
 }
 
 std::size_t CombinationKey::Hash::operator()(const CombinationKey &c) const
 {
-    return std::hash<std::string>()(c.action1) ^ (std::hash<std::string>()(c.action2));
+    return std::hash<int>()(c.action1) ^ std::hash<int>()(c.action2);
 }
 
 bool CombinationKey::operator==(const CombinationKey &other) const
@@ -17,75 +18,78 @@ bool CombinationKey::operator==(const CombinationKey &other) const
            (action1 == other.action2 && action2 == other.action1);
 }
 
-std::unordered_map<std::string, ActionFunctions> ActionRegistry::function_registry;
-std::unordered_map<CombinationKey, std::string, CombinationKey::Hash> ActionRegistry::combination_registry;
+std::unordered_map<ActionIdentifier, ActionFunctions> Action::function_registry;
+std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> Action::combination_registry;
 
-void godot::ActionRegistry::_bind_methods()
+void Action::_bind_methods()
 {
-    ClassDB::bind_static_method("ActionRegistry", D_METHOD("is_castable", "action_name", "surface", "caster", "position"), &ActionRegistry::is_castable);
-    ClassDB::bind_static_method("ActionRegistry", D_METHOD("cast_action", "action_name", "surface", "caster", "position"), &ActionRegistry::cast_action);
-    ClassDB::bind_static_method("ActionRegistry", D_METHOD("has_combination", "action1", "action2"), &ActionRegistry::has_combination);
-    ClassDB::bind_static_method("ActionRegistry", D_METHOD("get_combination", "action1", "action2"), &ActionRegistry::get_combination);
+    ClassDB::bind_static_method("Action", D_METHOD("is_castable", "action_name", "surface", "caster", "position"), &Action::is_castable);
+    ClassDB::bind_static_method("Action", D_METHOD("cast_action", "action_name", "surface", "caster", "position"), &Action::cast_action);
+    ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
+    ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
+
+    BIND_ENUM_CONSTANT(INVALID)
+    BIND_ENUM_CONSTANT(IDLE)
+    BIND_ENUM_CONSTANT(WRATHSPARK);
+    BIND_ENUM_CONSTANT(GROUNDRAISE);
+    BIND_ENUM_CONSTANT(BLOODDRAWING);
+    BIND_ENUM_CONSTANT(TREAD);
+    BIND_ENUM_CONSTANT(COILBLADE);
+    BIND_ENUM_CONSTANT(ETERNALSHACLES);
+    BIND_ENUM_CONSTANT(ALTAR);
+    BIND_ENUM_CONSTANT(NETHERSWAP);
 }
 
-void ActionRegistry::register_action(std::string action_name, ActionCheckType check_func, ActionCastType cast_func)
+bool Action::_is_castable(const CastInfo &cast_info)
 {
-    ActionFunctions af;
-    af.cast_func = cast_func;
-    af.check_func = check_func;
-    function_registry[action_name] = af;
+    if (!is_action_registered(cast_info.action))
+    {
+        return false;
+    }
+
+    return function_registry[cast_info.action].check_func(cast_info);
 }
 
-bool ActionRegistry::is_action_registered(std::string action_name)
+void Action::_cast_action(const CastInfo &cast_info)
 {
-    return function_registry.count(action_name) > 0;
+    function_registry[cast_info.action].cast_func(cast_info);
 }
 
-bool ActionRegistry::_is_castable(CastInfo cast_info)
-{
-    return function_registry[cast_info.action_name].check_func(cast_info);
-}
-
-void ActionRegistry::_cast_action(CastInfo cast_info)
-{
-    function_registry[cast_info.action_name].cast_func(cast_info);
-}
-
-void ActionRegistry::register_combination(std::string action1, std::string action2, std::string action_result)
-{
-    combination_registry[CombinationKey(action1, action2)] = action_result;
-}
-
-bool godot::ActionRegistry::is_castable(const String &action_name, Surface *surface, Unit *caster, const Vector2i &position)
-{
-    return false;
-}
-
-bool godot::ActionRegistry::cast_action(const String &action_name, Surface *surface, Unit *caster, const Vector2i &position)
-{
-    return false;
-}
-
-bool godot::ActionRegistry::has_combination(const String &action1, const String &action2)
-{
-    return false;
-}
-
-String godot::ActionRegistry::get_combination(const String &action1, const String &action2)
-{
-    return String();
-}
-
-bool ActionRegistry::_has_combination(std::string action1, std::string action2)
+bool Action::has_combination(const ActionIdentifier action1, const ActionIdentifier action2)
 {
     return combination_registry.count(CombinationKey(action1, action2)) > 0;
 }
 
-std::string ActionRegistry::_get_combination(std::string action1, std::string action2)
+ActionIdentifier Action::get_combination(const ActionIdentifier action1, const ActionIdentifier action2)
 {
-    if (_has_combination(action1, action2))
+    if (has_combination(action1, action2))
     {
         return combination_registry[CombinationKey(action1, action2)];
     }
-    return "";
+    return INVALID;
+}
+
+void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func)
+{
+    function_registry[action] = {check_func, cast_func};
+}
+
+bool Action::is_action_registered(ActionIdentifier action)
+{
+    return function_registry.count(action) > 0;
+}
+
+void Action::register_combination(ActionIdentifier action1, ActionIdentifier action2, ActionIdentifier action_result)
+{
+    combination_registry[CombinationKey(action1, action2)] = action_result;
+}
+
+bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
+{
+    return _is_castable({action, surface, caster, target});
+}
+
+void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
+{
+    _cast_action({action, surface, caster, target});
 }

@@ -3,33 +3,43 @@
 
 #include <godot_cpp/classes/ref_counted.hpp>
 
-namespace godot
+using namespace godot;
+
+enum Direction
 {
+    EAST = 0,
+    NORTH = 1,
+    WEST = 2,
+    SOUTH = 3
+};
 
-    class SurfaceElement : public RefCounted
-    {
-        GDCLASS(SurfaceElement, RefCounted)
+VARIANT_ENUM_CAST(Direction);
 
-    private:
-        bool is_on_surface;
+class SurfaceElement : public RefCounted
+{
+    GDCLASS(SurfaceElement, RefCounted)
 
-    protected:
-        static void _bind_methods();
+private:
+    bool is_on_surface;
+    Vector2i position;
 
-    public:
-        SurfaceElement();
-        ~SurfaceElement();
+protected:
+    static void _bind_methods();
 
-        int hit(int damage) const;
+public:
+    SurfaceElement();
+    ~SurfaceElement();
 
-        void kill();
+    virtual int hit(int damage);
 
-        bool get_is_on_surface() const;
-        void set_is_on_surface(const int p_is_on_surface);
+    virtual void kill();
 
-        virtual bool _is_unit() const;
-    };
+    bool get_is_on_surface() const;
+    void set_is_on_surface(const int p_is_on_surface);
+    Vector2i get_position() const;
+    void set_position(const Vector2i p_position);
 
-}
+    virtual bool _is_unit() const;
+};
 
 #endif
