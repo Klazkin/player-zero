@@ -12,49 +12,6 @@
 
 namespace godot
 {
-    class LosCheckResult : public RefCounted
-    {
-        GDCLASS(LosCheckResult, RefCounted)
-
-    private:
-        Vector2i collided_at;
-        Ref<SurfaceElement> element;
-
-    protected:
-        static void _bind_methods();
-
-    public:
-        LosCheckResult();
-        ~LosCheckResult();
-
-        void set_collision_position(const Vector2i &p_pos);
-        void set_collision_element(Ref<SurfaceElement> p_element);
-
-        Vector2i get_collision_position() const;
-        Ref<SurfaceElement> get_collision_element() const;
-    };
-
-    class CollisionProvider : public RefCounted
-    {
-        GDCLASS(CollisionProvider, RefCounted);
-
-    protected:
-        static void _bind_methods();
-
-    public:
-        Ref<LosCheckResult> getLosCheck(const Vector2i &from, const Vector2i &to);
-    };
-
-    class PathfindingProvider : public RefCounted
-    {
-        GDCLASS(PathfindingProvider, RefCounted);
-
-    protected:
-        static void _bind_methods();
-
-    public:
-        TypedArray<Vector2i> getPath(const Vector2i &from, const Vector2i &to);
-    };
 
     class Surface : public RefCounted
     {
@@ -62,8 +19,6 @@ namespace godot
 
     private:
         std::map<Vector2i, Ref<SurfaceElement>> element_positions;
-        Ref<PathfindingProvider> pathfinding_provider;
-        Ref<CollisionProvider> collision_provider;
 
     protected:
         static void _bind_methods();
@@ -72,11 +27,7 @@ namespace godot
         Surface();
         ~Surface();
 
-        void set_pathfinding_provider(const Ref<PathfindingProvider> p_provider);
-        Ref<PathfindingProvider> get_pathfinding_provider() const;
-
-        void set_collision_provider(const Ref<CollisionProvider> p_provider);
-        Ref<CollisionProvider> get_collision_provider() const;
+        PackedVector3Array get_shortest_path(const Vector2i path_start, const Vector2i path_end);
         Vector2i get_ray_collision(const Vector2i ray_start, const Vector2i ray_end);
 
         bool is_position_available(const Vector2i &p_pos) const; // TODO is there any point to pass Vector2i as ref?

@@ -7,50 +7,28 @@ using namespace godot;
 
 void Surface::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("set_pathfinding_provider", "p_provider"), &Surface::set_pathfinding_provider);
-    ClassDB::bind_method(D_METHOD("get_pathfinding_provider"), &Surface::get_pathfinding_provider);
-    ClassDB::add_property("Surface", PropertyInfo(Variant::NIL, "pathfinding_provider"), "set_pathfinding_provider", "get_pathfinding_provider");
-
-    ClassDB::bind_method(D_METHOD("set_collision_provider", "p_provider"), &Surface::set_collision_provider);
-    ClassDB::bind_method(D_METHOD("get_collision_provider"), &Surface::get_collision_provider);
-    ClassDB::add_property("Surface", PropertyInfo(Variant::NIL, "collision_provider"), "set_collision_provider", "get_collision_provider");
-
     ClassDB::bind_method(D_METHOD("is_position_available", "p_pos"), &Surface::is_position_available);
     ClassDB::bind_method(D_METHOD("place_element", "p_pos", "p_element"), &Surface::place_element);
     ClassDB::bind_method(D_METHOD("move_element", "p_pos_from", "p_pos_to"), &Surface::move_element);
     ClassDB::bind_method(D_METHOD("get_element", "p_pos"), &Surface::get_element);
     ClassDB::bind_method(D_METHOD("lift_element", "p_pos"), &Surface::lift_element);
     ClassDB::bind_method(D_METHOD("get_only_units"), &Surface::get_only_units);
+    ClassDB::bind_method(D_METHOD("get_shortest_path", "path_start", "path_end"), &Surface::get_shortest_path);
+    ClassDB::bind_method(D_METHOD("get_ray_collision", "ray_start", "ray_end"), &Surface::get_ray_collision);
 }
 
 Surface::Surface()
 {
     std::map<Vector2i, Ref<SurfaceElement>> element_positions;
-    Ref<PathfindingProvider> pathfinding_provider;
-    Ref<CollisionProvider> collision_provider;
 }
 
 Surface::~Surface()
 {
 }
 
-void Surface::set_pathfinding_provider(const Ref<PathfindingProvider> p_provider)
+PackedVector3Array godot::Surface::get_shortest_path(const Vector2i path_start, const Vector2i path_end)
 {
-    pathfinding_provider = p_provider;
-}
-
-Ref<PathfindingProvider> Surface::get_pathfinding_provider() const
-{
-    return pathfinding_provider;
-}
-
-void Surface::set_collision_provider(const Ref<CollisionProvider> p_provider)
-{
-    collision_provider = p_provider;
-}
-Ref<CollisionProvider> Surface::get_collision_provider() const
-{
-    return collision_provider;
+    return PackedVector3Array();
 }
 
 /*
@@ -173,72 +151,6 @@ TypedArray<Unit> Surface::get_only_units() const
             arr.append(pair.second);
         }
     }
-
-    return arr;
-}
-
-void LosCheckResult::_bind_methods()
-{
-    ClassDB::bind_method(D_METHOD("set_collision_object", "p_object"), &LosCheckResult::set_collision_element);
-    ClassDB::bind_method(D_METHOD("get_collision_object"), &LosCheckResult::get_collision_element);
-    ClassDB::add_property("LosCheckResult", PropertyInfo(Variant::NIL, "collision_object"), "set_collision_object", "get_collision_object");
-
-    ClassDB::bind_method(D_METHOD("set_collision_position", "p_pos"), &LosCheckResult::set_collision_position);
-    ClassDB::bind_method(D_METHOD("get_collision_position"), &LosCheckResult::get_collision_position);
-    ClassDB::add_property("LosCheckResult", PropertyInfo(Variant::VECTOR2I, "collision_position"), "set_collision_position", "get_collision_position");
-}
-
-LosCheckResult::LosCheckResult()
-{
-    Ref<SurfaceElement> element;
-}
-
-LosCheckResult::~LosCheckResult()
-{
-}
-
-void LosCheckResult::set_collision_position(const Vector2i &p_pos)
-{
-    collided_at = p_pos;
-}
-
-void LosCheckResult::set_collision_element(Ref<SurfaceElement> p_element)
-{
-    element = p_element;
-}
-
-Vector2i LosCheckResult::get_collision_position() const
-{
-    return collided_at;
-}
-
-Ref<SurfaceElement> LosCheckResult::get_collision_element() const // TODO in future may also include level geometry as a potential collider
-{
-    return element;
-}
-
-void CollisionProvider::_bind_methods()
-{
-    ClassDB::bind_method(D_METHOD("getLosCheck", "from", "to"), &CollisionProvider::getLosCheck);
-}
-
-Ref<LosCheckResult> CollisionProvider::getLosCheck(const Vector2i &from, const Vector2i &to)
-{
-    return nullptr;
-}
-
-void PathfindingProvider::_bind_methods()
-{
-    ClassDB::bind_method(D_METHOD("getPath", "from", "to"), &PathfindingProvider::getPath);
-}
-
-TypedArray<Vector2i> PathfindingProvider::getPath(const Vector2i &from, const Vector2i &to)
-{
-    TypedArray<Vector2i> arr;
-
-    arr.resize(2);
-    arr[0] = Vector2i(1, 2);
-    arr[1] = Vector2i(2, 3);
 
     return arr;
 }
