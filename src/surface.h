@@ -77,8 +77,9 @@ namespace godot
 
         void set_collision_provider(const Ref<CollisionProvider> p_provider);
         Ref<CollisionProvider> get_collision_provider() const;
+        Vector2i get_ray_collision(const Vector2i ray_start, const Vector2i ray_end);
 
-        bool is_position_available(const Vector2i &p_pos) const;
+        bool is_position_available(const Vector2i &p_pos) const; // TODO is there any point to pass Vector2i as ref?
         void place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element);
         bool move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to);
 

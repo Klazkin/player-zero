@@ -38,6 +38,7 @@ void Action::_bind_methods()
     BIND_ENUM_CONSTANT(ETERNALSHACLES);
     BIND_ENUM_CONSTANT(ALTAR);
     BIND_ENUM_CONSTANT(NETHERSWAP);
+    BIND_ENUM_CONSTANT(LOS_ACTION);
 }
 
 bool Action::_is_castable(const CastInfo &cast_info)

@@ -1,6 +1,6 @@
 src/*.obj
+src/*.exe
 .sconsign.dblite
 .vscode
 .idea
-standalone_runnable.*
-thirdparty
+thirdparty/*

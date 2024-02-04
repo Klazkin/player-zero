@@ -32,6 +32,11 @@ void register_handlers()
         check_is_direction_valid,
         [](const CastInfo &c)
         { multicaster(c, check_cell_taken, cast_wrathspark, generate_coilblade_points()); });
+
+    Action::register_action(
+        LOS_ACTION,
+        check_line_of_sight,
+        cast_nothing);
 }
 
 void register_combinations()
@@ -74,6 +79,18 @@ bool check_is_direction_valid(const CastInfo &cast)
 bool check_cast_distance(const CastInfo &cast, int max_distance)
 {
     return (cast.target - cast.caster->get_position()).length_squared() <= max_distance * max_distance;
+}
+
+bool check_line_of_sight(const CastInfo &cast)
+{
+    return cast.target == cast.surface->get_ray_collision( // returns first collider
+                              cast.caster->get_position(), // cast from
+                              cast.target);                // cast to
+}
+
+void cast_nothing(const CastInfo &cast)
+{
+    UtilityFunctions::print("DEBUG CAST: " + String(cast.target));
 }
 
 void cast_wrathspark(const CastInfo &cast)

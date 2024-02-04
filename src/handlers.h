@@ -14,7 +14,9 @@ bool check_unit_only(const CastInfo &cast);
 bool check_self_cast(const CastInfo &cast);
 bool check_is_direction_valid(const CastInfo &cast);
 bool check_cast_distance(const CastInfo &cast, int max_distance);
+bool check_line_of_sight(const CastInfo &cast);
 
+void cast_nothing(const CastInfo &cast);
 void cast_wrathspark(const CastInfo &cast);
 void cast_groundraise(const CastInfo &cast);
 void cast_tread(const CastInfo &cast);

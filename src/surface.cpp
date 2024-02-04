@@ -53,6 +53,55 @@ Ref<CollisionProvider> Surface::get_collision_provider() const
     return collision_provider;
 }
 
+/*
+ * Based on an extended Bresenham's line algorithm.
+ */
+Vector2i godot::Surface::get_ray_collision(const Vector2i ray_start, const Vector2i ray_end)
+{
+    int x1 = ray_start.x, y1 = ray_start.y, x2 = ray_end.x, y2 = ray_end.y;
+
+    int dx = abs(x1 - x2); // difference
+    int dy = abs(y1 - y2);
+
+    int tx = (x1 < x2) ? 1 : -1; // direction of change (positive or negative)
+    int ty = (y1 < y2) ? 1 : -1;
+
+    if (dx >= dy) // x increases faster than y (easy slope)
+    {
+        int pk = 2 * dy - dx;
+        for (int x = x1, y = y1; x != x2 + tx; x += tx)
+        {
+            if (x != x1 && !is_position_available(Vector2i(x, y)))
+                return Vector2i(x, y);
+
+            if (pk >= 0)
+            {
+                y += ty;
+                pk -= 2 * dx;
+            }
+            pk += 2 * dy;
+        }
+    }
+    else // y increases faster (steep slope)
+    {
+        int pk = 2 * dx - dy;
+        for (int x = x1, y = y1; y != y2 + ty; y += ty)
+        {
+            if (y != y1 && !is_position_available(Vector2i(x, y)))
+                return Vector2i(x, y);
+
+            if (pk >= 0)
+            {
+                x += tx;
+                pk -= 2 * dy;
+            }
+            pk += 2 * dx;
+        }
+    }
+
+    return ray_end;
+}
+
 bool Surface::is_position_available(const Vector2i &p_pos) const
 {
     return element_positions.count(p_pos) == 0;
