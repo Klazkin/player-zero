@@ -36,8 +36,8 @@ Unit::~Unit()
 
 int Unit::hit(int damage)
 {
-    health -= damage;
-    emit_signal("hit", damage);
+    set_health(get_health() - damage);
+    emit_signal("hurt", damage);
     return 1; // TODO return damage change
 }
 
@@ -74,7 +74,12 @@ int Unit::get_speed() const
     return speed;
 }
 
-bool Unit::_is_unit() const
+bool Unit::is_unit() const
 {
     return true;
+}
+
+bool godot::Unit::is_dead() const
+{
+    return health <= 0;
 }

@@ -33,7 +33,7 @@ namespace godot
         Surface();
         ~Surface();
 
-        std::vector<Vector2i> Surface::get_free_neighbors(const Vector2i p_pos) const;
+        std::vector<Vector2i> get_free_neighbors(const Vector2i p_pos) const;
         PackedVector2Array get_shortest_path(const Vector2i path_start, const Vector2i path_end) const;
         Vector2i get_ray_collision(const Vector2i ray_start, const Vector2i ray_end) const;
 
@@ -45,6 +45,7 @@ namespace godot
         Ref<SurfaceElement> lift_element(const Vector2i &p_pos);
 
         TypedArray<Unit> get_only_units() const; // bad implementation pattern
+        void remove_if_dead(const Ref<SurfaceElement> p_element);
     };
 
 }

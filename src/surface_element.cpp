@@ -12,8 +12,9 @@ void SurfaceElement::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_position"), &SurfaceElement::get_position);
     ClassDB::bind_method(D_METHOD("get_is_on_surface"), &SurfaceElement::get_is_on_surface);
 
-    ADD_SIGNAL(MethodInfo("hit", PropertyInfo(Variant::INT, "damage")));
+    ADD_SIGNAL(MethodInfo("hurt", PropertyInfo(Variant::INT, "damage")));
     ADD_SIGNAL(MethodInfo("position_changed", PropertyInfo(Variant::VECTOR2I, "new_pos")));
+    ADD_SIGNAL(MethodInfo("killed"));
 }
 
 SurfaceElement::SurfaceElement()
@@ -28,8 +29,13 @@ SurfaceElement::~SurfaceElement()
 
 int SurfaceElement::hit(int damage)
 {
-    emit_signal("hit", damage);
+    emit_signal("hurt", damage);
     return 0;
+}
+
+void SurfaceElement::kill()
+{
+    emit_signal("killed");
 }
 
 bool SurfaceElement::get_is_on_surface() const
@@ -53,11 +59,12 @@ void SurfaceElement::set_position(const Vector2i p_postion)
     position = p_postion;
 }
 
-bool SurfaceElement::_is_unit() const
+bool SurfaceElement::is_unit() const
 {
     return false;
 }
 
-void SurfaceElement::kill()
+bool SurfaceElement::is_dead() const
 {
+    return false;
 }

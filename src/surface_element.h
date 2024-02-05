@@ -22,6 +22,7 @@ class SurfaceElement : public RefCounted
 private:
     bool is_on_surface;
     Vector2i position;
+    void (*kill_callback)(SurfaceElement se);
 
 protected:
     static void _bind_methods();
@@ -31,7 +32,6 @@ public:
     ~SurfaceElement();
 
     virtual int hit(int damage);
-
     virtual void kill();
 
     bool get_is_on_surface() const;
@@ -39,7 +39,8 @@ public:
     Vector2i get_position() const;
     void set_position(const Vector2i p_position);
 
-    virtual bool _is_unit() const;
+    virtual bool is_unit() const;
+    virtual bool is_dead() const;
 };
 
 #endif

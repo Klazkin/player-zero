@@ -62,7 +62,7 @@ bool check_cell_taken(const CastInfo &cast)
 
 bool check_unit_only(const CastInfo &cast)
 {
-    return check_cell_taken(cast) && cast.surface->get_element(cast.target)->_is_unit();
+    return check_cell_taken(cast) && cast.surface->get_element(cast.target)->is_unit();
 }
 
 bool check_self_cast(const CastInfo &cast)
@@ -97,6 +97,7 @@ void cast_wrathspark(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
     target_element->hit(4);
+    cast.surface->remove_if_dead(target_element);
 }
 
 void cast_groundraise(const CastInfo &cast)

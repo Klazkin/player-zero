@@ -82,9 +82,7 @@ PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const V
 
         for (Vector2i next : get_free_neighbors(current))
         {
-            UtilityFunctions::print("    Next:   " + String(next));
             int new_cost = cost_so_far[current] + 1;
-
             if (new_cost > 256) // prevent infinite iteration in cases of large infinite maps
             {
                 max_cost_reached = true;
@@ -185,6 +183,7 @@ void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_e
     }
     p_element->set_is_on_surface(true);
     p_element->set_position(p_pos);
+    // p_element->set_kill_callback(kill_from_surface);
     element_positions[p_pos] = p_element;
 }
 
@@ -231,11 +230,20 @@ TypedArray<Unit> Surface::get_only_units() const
 
     for (auto pair : element_positions) // TODO check if the map contians empty cells
     {
-        if (pair.second->_is_unit())
+        if (pair.second->is_unit())
         {
             arr.append(pair.second);
         }
     }
 
     return arr;
+}
+
+void Surface::remove_if_dead(const Ref<SurfaceElement> p_element)
+{
+    if (p_element->is_dead())
+    {
+        p_element->kill();
+        lift_element(p_element->get_position());
+    }
 }
