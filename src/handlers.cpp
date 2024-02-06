@@ -102,7 +102,7 @@ void cast_wrathspark(const CastInfo &cast)
 
 void cast_groundraise(const CastInfo &cast)
 {
-    Ref<SurfaceElement> ground_element = memnew(SurfaceElement);
+    Ref<SurfaceElement> ground_element = memnew(DestructibleElement);
     cast.surface->place_element(cast.target, ground_element);
 }
 

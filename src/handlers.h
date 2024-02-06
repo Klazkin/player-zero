@@ -3,6 +3,7 @@
 
 #include "action.h"
 #include "surface_element.h"
+#include "destructible_element.h"
 
 void register_handlers();
 void register_combinations();
