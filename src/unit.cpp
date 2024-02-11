@@ -1,5 +1,6 @@
 #include "unit.h"
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
 
@@ -20,10 +21,13 @@ void Unit::_bind_methods()
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
     ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed")));
+
+    ClassDB::bind_method(D_METHOD("demo_trigger"), &Unit::trigger_on_start_turn_subscribers);
 }
 
 Unit::Unit()
 {
+    std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber> subscribers;
     max_health = 20;
     health = max_health;
     speed = 1;
@@ -31,13 +35,22 @@ Unit::Unit()
 
 Unit::~Unit()
 {
-    // Add your cleanup here.
+    UtilityFunctions::print("~Unit()");
+    for (auto key_value_pair : subscribers)
+    {
+        delete key_value_pair.second;
+    }
 }
 
 int Unit::hit(int damage)
 {
     set_health(get_health() - damage);
+    trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also
     emit_signal("hurt", damage);
+    if (is_dead())
+    {
+        trigger_death();
+    }
     return 1; // TODO return damage change
 }
 
@@ -79,7 +92,39 @@ bool Unit::is_unit() const
     return true;
 }
 
-bool godot::Unit::is_dead() const
+bool Unit::is_dead() const
 {
     return health <= 0;
+}
+
+void Unit::add_subscriber(UnitSubscriber *subscriber)
+{
+    if (subscribers.count(subscriber->get_id()) > 0)
+    {
+        remove_subscriber(subscriber->get_id());
+    }
+
+    subscribers[subscriber->get_id()] = subscriber;
+}
+
+void Unit::remove_subscriber(UnitSubscriberIdentifier id)
+{
+    delete subscribers[id];
+    subscribers.erase(id);
+}
+
+void Unit::trigger_on_start_turn_subscribers()
+{
+    for (auto key_value_pair : subscribers)
+    {
+        key_value_pair.second->on_turn_start();
+    }
+}
+
+void Unit::trigger_on_hit_subscribers(int damage)
+{
+    for (auto key_value_pair : subscribers)
+    {
+        key_value_pair.second->on_hit(damage);
+    }
 }

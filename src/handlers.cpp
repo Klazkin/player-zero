@@ -37,6 +37,22 @@ void register_handlers()
         LOS_ACTION,
         check_line_of_sight,
         cast_nothing);
+
+    Action::register_action(
+        DETONATION,
+        check_unit_only,
+        cast_detonate);
+
+    Action::register_action(
+        ETERNALSHACLES,
+        [](const CastInfo &c)
+        { return check_not_self_cast(c) && check_cell_taken(c); },
+        cast_shacle);
+
+    Action::register_action(
+        DEBUG_KILL,
+        check_cell_taken,
+        cast_debug_kill);
 }
 
 void register_combinations()
@@ -67,7 +83,12 @@ bool check_unit_only(const CastInfo &cast)
 
 bool check_self_cast(const CastInfo &cast)
 {
-    return cast.caster == cast.surface->get_element(cast.target);
+    return cast.caster->get_position() == cast.target;
+}
+
+bool check_not_self_cast(const CastInfo &cast)
+{
+    return !check_self_cast(cast);
 }
 
 bool check_is_direction_valid(const CastInfo &cast)
@@ -97,12 +118,17 @@ void cast_wrathspark(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
     target_element->hit(4);
-    cast.surface->remove_if_dead(target_element);
+
+    if (target_element->is_unit())
+    {
+        Unit *target_unit = as_unit_ptr(target_element);
+        target_unit->add_subscriber(new BurnStatus(target_unit, 5));
+    }
 }
 
 void cast_groundraise(const CastInfo &cast)
 {
-    Ref<SurfaceElement> ground_element = memnew(DestructibleElement);
+    Ref<SurfaceElement> ground_element = memnew(DestructibleElement); // TODO check safety
     cast.surface->place_element(cast.target, ground_element);
 }
 
@@ -120,6 +146,31 @@ void cast_swap(const CastInfo &cast)
     cast.surface->lift_element(cast.target);
     cast.surface->place_element(cast.caster->get_position(), target_element);
     cast.surface->place_element(cast.target, cast.caster);
+}
+
+void cast_detonate(const CastInfo &cast)
+{
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    target_unit->add_subscriber(new Countdown(target_unit, 2));
+}
+
+void cast_shacle(const CastInfo &cast)
+{
+    Unit *caster_unit = as_unit_ptr(cast.caster);
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    int *link_counter = new int(2);
+
+    ShaclesParent *parent = new ShaclesParent(link_counter, caster_unit, target_unit, 3);
+    ShaclesChild *child = new ShaclesChild(link_counter, target_unit, 3);
+
+    caster_unit->add_subscriber(parent);
+    target_unit->add_subscriber(child);
+}
+
+void cast_debug_kill(const CastInfo &cast)
+{
+    Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
+    target_element->hit(99999);
 }
 
 void multicaster(
@@ -157,8 +208,13 @@ void multicaster(
     }
 }
 
+Unit *as_unit_ptr(Ref<SurfaceElement> element)
+{
+    return Object::cast_to<Unit>(*element);
+}
+
 PackedVector2Array generate_coilblade_points()
-{ // temproray solution TODO make a registry for patterns or something
+{ // TODO make a registry for patterns
     PackedVector2Array points;
     points.append(Point2i(1, 0));
     points.append(Point2i(2, 0));

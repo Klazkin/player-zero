@@ -18,6 +18,11 @@ int DestructibleElement::hit(int damage)
 {
     health -= damage;
     emit_signal("hurt", damage);
+    if (is_dead())
+    {
+        trigger_death();
+    }
+
     return damage;
 }
 

@@ -23,12 +23,12 @@ std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> Actio
 
 void Action::_bind_methods()
 {
-    ClassDB::bind_static_method("Action", D_METHOD("is_castable", "action_name", "surface", "caster", "position"), &Action::is_castable);
-    ClassDB::bind_static_method("Action", D_METHOD("cast_action", "action_name", "surface", "caster", "position"), &Action::cast_action);
+    ClassDB::bind_static_method("Action", D_METHOD("is_castable", "action", "surface", "caster", "position"), &Action::is_castable);
+    ClassDB::bind_static_method("Action", D_METHOD("cast_action", "action", "surface", "caster", "position"), &Action::cast_action);
     ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
     ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
 
-    BIND_ENUM_CONSTANT(INVALID)
+    BIND_ENUM_CONSTANT(INVALID_ACTION)
     BIND_ENUM_CONSTANT(IDLE)
     BIND_ENUM_CONSTANT(WRATHSPARK);
     BIND_ENUM_CONSTANT(GROUNDRAISE);
@@ -39,6 +39,8 @@ void Action::_bind_methods()
     BIND_ENUM_CONSTANT(ALTAR);
     BIND_ENUM_CONSTANT(NETHERSWAP);
     BIND_ENUM_CONSTANT(LOS_ACTION);
+    BIND_ENUM_CONSTANT(DETONATION);
+    BIND_ENUM_CONSTANT(DEBUG_KILL);
 }
 
 bool Action::_is_castable(const CastInfo &cast_info)
@@ -67,7 +69,7 @@ ActionIdentifier Action::get_combination(const ActionIdentifier action1, const A
     {
         return combination_registry[CombinationKey(action1, action2)];
     }
-    return INVALID;
+    return INVALID_ACTION;
 }
 
 void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func)
@@ -85,12 +87,12 @@ void Action::register_combination(ActionIdentifier action1, ActionIdentifier act
     combination_registry[CombinationKey(action1, action2)] = action_result;
 }
 
-bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
+bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target)
 {
     return _is_castable({action, surface, caster, target});
 }
 
-void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
+void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target)
 {
     _cast_action({action, surface, caster, target});
 }
