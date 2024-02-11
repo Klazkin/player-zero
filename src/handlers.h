@@ -2,6 +2,7 @@
 #define HANDLERS_H
 
 #include "action.h"
+#include "status.h"
 #include "surface_element.h"
 #include "destructible_element.h"
 

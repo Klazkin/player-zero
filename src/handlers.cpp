@@ -97,12 +97,19 @@ void cast_wrathspark(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
     target_element->hit(4);
+
+    if (target_element->is_unit())
+    {
+        // TODO terrible cast, get rid of it
+        Unit *target_unit = Object::cast_to<Unit>(*target_element);
+        target_unit->add_subscriber(new BurnStatus(target_unit, 5));
+    }
     cast.surface->remove_if_dead(target_element);
 }
 
 void cast_groundraise(const CastInfo &cast)
 {
-    Ref<SurfaceElement> ground_element = memnew(DestructibleElement);
+    Ref<SurfaceElement> ground_element = memnew(DestructibleElement); // TODO check safety
     cast.surface->place_element(cast.target, ground_element);
 }
 
@@ -158,7 +165,7 @@ void multicaster(
 }
 
 PackedVector2Array generate_coilblade_points()
-{ // temproray solution TODO make a registry for patterns or something
+{ // TODO make a registry for patterns
     PackedVector2Array points;
     points.append(Point2i(1, 0));
     points.append(Point2i(2, 0));

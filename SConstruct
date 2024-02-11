@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import os
 import sys
+import scons_compiledb
 
 env = SConscript("godot-cpp/SConstruct")
+scons_compiledb.enable(env)
+# scons_compiledb.enable_with_cmdline(env)
 extension_path = 'gaf6/bin/'
 
 # For reference:
@@ -46,3 +49,4 @@ executable = env.Program(target=extension_path + 'standalone_runnable', source=s
 
 Default(library)
 Default(executable)
+env.CompileDb()

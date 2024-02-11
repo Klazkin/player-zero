@@ -183,7 +183,6 @@ void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_e
     }
     p_element->set_is_on_surface(true);
     p_element->set_position(p_pos);
-    // p_element->set_kill_callback(kill_from_surface);
     element_positions[p_pos] = p_element;
 }
 

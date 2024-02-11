@@ -4,3 +4,4 @@ src/*.exe
 .vscode
 .idea
 thirdparty/*
+*compile_commands.json

@@ -20,10 +20,13 @@ void Unit::_bind_methods()
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
     ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed")));
+
+    ClassDB::bind_method(D_METHOD("demo_trigger"), &Unit::trigger_all_subscribers);
 }
 
 Unit::Unit()
 {
+    std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber> subscribers;
     max_health = 20;
     health = max_health;
     speed = 1;
@@ -79,7 +82,31 @@ bool Unit::is_unit() const
     return true;
 }
 
-bool godot::Unit::is_dead() const
+bool Unit::is_dead() const
 {
     return health <= 0;
+}
+
+void Unit::add_subscriber(UnitSubscriber *subscriber)
+{
+    if (subscribers.count(subscriber->get_id()) > 0)
+    {
+        remove_subscriber(subscriber->get_id());
+    }
+
+    subscribers[subscriber->get_id()] = subscriber;
+}
+
+void Unit::remove_subscriber(UnitSubscriberIdentifier id)
+{
+    delete subscribers[id];
+    subscribers.erase(id);
+}
+
+void Unit::trigger_all_subscribers()
+{
+    for (auto key_value_pair : subscribers)
+    {
+        key_value_pair.second->trigger();
+    }
 }
