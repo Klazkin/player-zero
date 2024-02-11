@@ -7,6 +7,7 @@
 #include "handlers.h"
 #include "ortbinding.h"
 #include "destructible_element.h"
+#include "actor.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -29,6 +30,8 @@ void initialize_example_module(ModuleInitializationLevel p_level)
     ClassDB::register_abstract_class<Action>();
     ClassDB::register_class<ORTBinding>();
     ClassDB::register_class<DestructibleElement>();
+    ClassDB::register_class<ActionBundle>();
+    ClassDB::register_abstract_class<Actor>();
 }
 
 void uninitialize_example_module(ModuleInitializationLevel p_level)

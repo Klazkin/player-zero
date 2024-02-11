@@ -54,7 +54,7 @@ std::vector<Vector2i> Surface::get_free_neighbors(const Vector2i pos) const
     return neighbors;
 }
 
-PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const Vector2i path_end) const
+PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const Vector2i path_end, const bool to_neighbor) const
 {
     std::unordered_map<Vector2i, int, VectorHasher> cost_so_far;
     std::unordered_map<Vector2i, Vector2i, VectorHasher> came_from;
@@ -89,10 +89,18 @@ PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const V
         if (current == path_end || max_cost_reached)
             break;
 
+        // Special case for "to_neighbor", when we do not want to reach the target, but merely close enough
+        // TODO generalise this to some "minimum distance_reached" param
+        if (to_neighbor && (current - path_end).length_squared() == 1)
+        {
+            came_from[path_end] = current;
+            break;
+        }
+
         for (Vector2i next : get_free_neighbors(current))
         {
             int new_cost = cost_so_far[current] + 1;
-            if (new_cost > 256) // prevent infinite iteration in cases of large infinite maps
+            if (new_cost > 256) // prevent infinite iteration in cases of infinite maps
             {
                 max_cost_reached = true;
                 break;
@@ -248,6 +256,21 @@ TypedArray<Unit> Surface::get_only_units() const
     return arr;
 }
 
+std::vector<Ref<Unit>> Surface::get_only_units_vec() const
+{
+    std::vector<Ref<Unit>> ret;
+
+    for (auto pair : element_positions)
+    {
+        if (pair.second->is_unit())
+        {
+            ret.push_back(pair.second);
+        }
+    }
+
+    return ret;
+}
+
 bool unit_speed_compare(Ref<Unit> u1, Ref<Unit> u2)
 {
     return u1->get_speed() < u2->get_speed(); // TODO handle speed ties
@@ -268,20 +291,27 @@ void Surface::turn_generate()
     }
 
     std::sort(unit_order.begin(), unit_order.end(), unit_speed_compare);
-    // duplicate code is bad...
-    emit_signal("turn_started", turn_get_current_unit());
-    turn_get_current_unit()->trigger_on_start_turn_subscribers();
+    _start_current_units_turn();
+}
+
+void Surface::_start_current_units_turn()
+{
+    Ref<Unit> cur_unit = turn_get_current_unit();
+    if (cur_unit.is_valid())
+    {
+        emit_signal("turn_started", cur_unit);
+        cur_unit->reset_stat_modifiers();
+        cur_unit->trigger_on_start_turn_subscribers();
+    }
 }
 
 TypedArray<Unit> Surface::turn_get_order() const
 {
     TypedArray<Unit> arr;
-
     for (auto u : unit_order)
     {
         arr.append(u);
     }
-
     return arr;
 }
 
@@ -298,9 +328,5 @@ void Surface::turn_next()
 {
     emit_signal("turn_ended", turn_get_current_unit());
     unit_order.pop_back();
-    if (!unit_order.empty())
-    {
-        emit_signal("turn_started", turn_get_current_unit());
-        turn_get_current_unit()->trigger_on_start_turn_subscribers();
-    }
+    _start_current_units_turn();
 }

@@ -14,27 +14,9 @@
 
 #include "surface.h"
 #include "unit.h"
+#include "action_identifier.h"
 
 using namespace godot;
-
-enum ActionIdentifier
-{
-    INVALID_ACTION = -1,
-    IDLE,
-    WRATHSPARK,
-    GROUNDRAISE,
-    BLOODDRAWING,
-    TREAD,
-    COILBLADE,
-    ETERNALSHACLES,
-    ALTAR,
-    NETHERSWAP,
-    LOS_ACTION,
-    DETONATION,
-    DEBUG_KILL
-};
-
-VARIANT_ENUM_CAST(ActionIdentifier);
 
 struct CastInfo
 {
@@ -76,13 +58,13 @@ private:
     static std::unordered_map<ActionIdentifier, ActionFunctions> function_registry;
     static std::unordered_map<CombinationKey, ActionIdentifier, CombinationKey::Hash> combination_registry;
 
-    static bool _is_castable(const CastInfo &cast_info); // use ActionCheckType
-    static void _cast_action(const CastInfo &cast_info); // use ActionCastType
-
 protected:
     static void _bind_methods();
 
 public:
+    static bool _is_castable(const CastInfo &cast_info); // use ActionCheckType
+    static void _cast_action(const CastInfo &cast_info); // use ActionCastType
+
     static void register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func);
     static bool is_action_registered(ActionIdentifier action);
     static void register_combination(ActionIdentifier action1, ActionIdentifier action2, ActionIdentifier action_result);

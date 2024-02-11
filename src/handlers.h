@@ -27,6 +27,9 @@ void cast_swap(const CastInfo &cast);
 void cast_detonate(const CastInfo &cast);
 void cast_shacle(const CastInfo &cast);
 void cast_debug_kill(const CastInfo &cast);
+void cast_wispsparks(const CastInfo &cast);
+void cast_bonedust(const CastInfo &cast);
+void cast_bonesparks(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,
