@@ -21,8 +21,6 @@ void Unit::_bind_methods()
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
     ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed")));
-
-    ClassDB::bind_method(D_METHOD("demo_trigger"), &Unit::trigger_on_start_turn_subscribers);
 }
 
 Unit::Unit()
