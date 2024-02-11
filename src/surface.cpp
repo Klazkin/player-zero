@@ -2,6 +2,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include "surface_kill_subscriber.h"
 
 using namespace godot;
 
@@ -181,6 +182,7 @@ void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_e
         UtilityFunctions::print(element_positions.count(p_pos) > 0);
         return;
     }
+    p_element->set_death_subscriber(new SurfaceKillSubscriber(this, *p_element)); // TODO causes movement to be slow
     p_element->set_is_on_surface(true);
     p_element->set_position(p_pos);
     element_positions[p_pos] = p_element;
@@ -236,13 +238,4 @@ TypedArray<Unit> Surface::get_only_units() const
     }
 
     return arr;
-}
-
-void Surface::remove_if_dead(const Ref<SurfaceElement> p_element)
-{
-    if (p_element->is_dead())
-    {
-        p_element->kill();
-        lift_element(p_element->get_position());
-    }
 }

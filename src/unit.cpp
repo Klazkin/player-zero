@@ -1,5 +1,6 @@
 #include "unit.h"
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
 
@@ -34,7 +35,11 @@ Unit::Unit()
 
 Unit::~Unit()
 {
-    // Add your cleanup here.
+    UtilityFunctions::print("~Unit()");
+    for (auto key_value_pair : subscribers)
+    {
+        delete key_value_pair.second;
+    }
 }
 
 int Unit::hit(int damage)
@@ -42,6 +47,10 @@ int Unit::hit(int damage)
     set_health(get_health() - damage);
     trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also
     emit_signal("hurt", damage);
+    if (is_dead())
+    {
+        trigger_death();
+    }
     return 1; // TODO return damage change
 }
 

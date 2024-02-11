@@ -48,6 +48,11 @@ void register_handlers()
         [](const CastInfo &c)
         { return check_not_self_cast(c) && check_cell_taken(c); },
         cast_shacle);
+
+    Action::register_action(
+        DEBUG_KILL,
+        check_cell_taken,
+        cast_debug_kill);
 }
 
 void register_combinations()
@@ -116,11 +121,9 @@ void cast_wrathspark(const CastInfo &cast)
 
     if (target_element->is_unit())
     {
-        // TODO terrible cast, get rid of it
-        Unit *target_unit = Object::cast_to<Unit>(*target_element);
+        Unit *target_unit = as_unit_ptr(target_element);
         target_unit->add_subscriber(new BurnStatus(target_unit, 5));
     }
-    cast.surface->remove_if_dead(target_element);
 }
 
 void cast_groundraise(const CastInfo &cast)
@@ -147,15 +150,27 @@ void cast_swap(const CastInfo &cast)
 
 void cast_detonate(const CastInfo &cast)
 {
-    Unit *target_unit = Object::cast_to<Unit>(*cast.surface->get_element(cast.target)); // TODO terrible cast, get rid of it
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
     target_unit->add_subscriber(new Countdown(target_unit, 2));
 }
 
 void cast_shacle(const CastInfo &cast)
 {
-    Unit *caster_unit = Object::cast_to<Unit>(*cast.caster);
-    Unit *target_unit = Object::cast_to<Unit>(*cast.surface->get_element(cast.target)); // TODO terrible cast, get rid of it
-    caster_unit->add_subscriber(new Shacles(caster_unit, target_unit, 3));
+    Unit *caster_unit = as_unit_ptr(cast.caster);
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    int *link_counter = new int(2);
+
+    ShaclesParent *parent = new ShaclesParent(link_counter, caster_unit, target_unit, 3);
+    ShaclesChild *child = new ShaclesChild(link_counter, target_unit, 3);
+
+    caster_unit->add_subscriber(parent);
+    target_unit->add_subscriber(child);
+}
+
+void cast_debug_kill(const CastInfo &cast)
+{
+    Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
+    target_element->hit(99999);
 }
 
 void multicaster(
@@ -191,6 +206,11 @@ void multicaster(
         if (local_checker(loc_cast))
             local_caster(loc_cast);
     }
+}
+
+Unit *as_unit_ptr(Ref<SurfaceElement> element)
+{
+    return Object::cast_to<Unit>(*element);
 }
 
 PackedVector2Array generate_coilblade_points()

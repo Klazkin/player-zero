@@ -1,4 +1,5 @@
 #include "surface_element.h"
+#include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
 
@@ -25,6 +26,8 @@ SurfaceElement::SurfaceElement()
 
 SurfaceElement::~SurfaceElement()
 {
+    UtilityFunctions::print("~SurfaceElement()");
+    delete death_sub;
 }
 
 int SurfaceElement::hit(int damage)
@@ -33,8 +36,9 @@ int SurfaceElement::hit(int damage)
     return 0;
 }
 
-void SurfaceElement::kill()
+void SurfaceElement::trigger_death()
 {
+    death_sub->on_death();
     emit_signal("killed");
 }
 
@@ -59,12 +63,21 @@ void SurfaceElement::set_position(const Vector2i p_postion)
     position = p_postion;
 }
 
+void SurfaceElement::set_death_subscriber(UnitSubscriber *p_death_sub)
+{
+    if (death_sub != nullptr)
+    {
+        delete death_sub;
+    }
+    death_sub = p_death_sub;
+}
+
 bool SurfaceElement::is_unit() const
 {
     return false;
 }
 
-bool SurfaceElement::is_dead() const
+bool SurfaceElement::is_dead() const // TODO Depricated
 {
     return false;
 }

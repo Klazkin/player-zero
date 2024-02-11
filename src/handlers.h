@@ -26,12 +26,15 @@ void cast_tread(const CastInfo &cast);
 void cast_swap(const CastInfo &cast);
 void cast_detonate(const CastInfo &cast);
 void cast_shacle(const CastInfo &cast);
+void cast_debug_kill(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,
                  ActionCastType local_caster,
                  const PackedVector2Array &points,
                  bool is_rotatable = true);
+
+Unit *as_unit_ptr(Ref<SurfaceElement> element);
 
 PackedVector2Array generate_coilblade_points();
 

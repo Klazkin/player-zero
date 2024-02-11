@@ -3,10 +3,15 @@
 
 Status::Status(UnitSubscriberIdentifier p_sub_id, Unit *p_target_ptr, const int p_duration)
 {
-    UtilityFunctions::print("status init");
+    UtilityFunctions::print("Status()");
     target_ptr = p_target_ptr;
     duration = p_duration;
     sub_id = p_sub_id;
+}
+
+Status::~Status()
+{
+    UtilityFunctions::print("~Status()");
 }
 
 void Status::decrease_duration()
@@ -29,6 +34,14 @@ void Status::on_turn_start()
     }
 }
 
+void Status::on_hit(int damage)
+{
+}
+
+void Status::on_death()
+{
+}
+
 BurnStatus::BurnStatus(Unit *p_target_ptr, const int p_duration) : Status(STATUS_BURN, p_target_ptr, p_duration) {}
 
 void BurnStatus::on_turn_start()
@@ -46,14 +59,44 @@ void Countdown::on_turn_start()
     Status::on_turn_start();
 }
 
-Shacles::Shacles(Unit *caster_ptr, Unit *p_target_ptr, const int p_duration) : Status(STATUS_SHACLES, caster_ptr, p_duration)
+ShaclesParent::ShaclesParent(int *p_link_counter, Unit *caster_ptr, Unit *p_target_ptr, const int p_duration) : Status(STATUS_SHACLES, caster_ptr, p_duration)
 {
-    UtilityFunctions::print("init shacles init");
-    shacle_target_ptr = p_target_ptr; // TODO may cause issues if one of them is dead
+    link_counter = p_link_counter;
+    shacle_target_ptr = p_target_ptr;
 }
 
-void Shacles::on_hit(int damage)
+ShaclesParent::~ShaclesParent()
 {
-    UtilityFunctions::print("shacle damage transfer");
-    shacle_target_ptr->hit(damage); // damage transfer
+    UtilityFunctions::print("~ShaclesParent()");
+    (*link_counter)--;
+    if (*link_counter <= 0)
+    {
+        UtilityFunctions::print("delete link_counter");
+        delete link_counter;
+    }
+}
+
+void ShaclesParent::on_hit(int damage)
+{
+    if (*link_counter == 2)
+    {
+        UtilityFunctions::print("shacle_target_ptr->hit(damage);");
+        shacle_target_ptr->hit(damage); // damage transfer
+    }
+}
+
+ShaclesChild::ShaclesChild(int *p_link_counter, Unit *p_target_ptr, const int p_duration) : Status(STATUS_SHACLES, p_target_ptr, p_duration)
+{
+    link_counter = p_link_counter;
+}
+
+ShaclesChild::~ShaclesChild()
+{
+    UtilityFunctions::print("~ShaclesChild()");
+    (*link_counter)--;
+    if (*link_counter <= 0)
+    {
+        UtilityFunctions::print("delete link_counter");
+        delete link_counter;
+    }
 }

@@ -45,7 +45,7 @@ namespace godot
         Ref<SurfaceElement> lift_element(const Vector2i &p_pos);
 
         TypedArray<Unit> get_only_units() const; // bad implementation pattern
-        void remove_if_dead(const Ref<SurfaceElement> p_element);
+        // void remove_if_dead(const Ref<SurfaceElement> p_element);
     };
 
 }

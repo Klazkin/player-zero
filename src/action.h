@@ -30,7 +30,8 @@ enum ActionIdentifier
     ALTAR,
     NETHERSWAP,
     LOS_ACTION,
-    DETONATION
+    DETONATION,
+    DEBUG_KILL
 };
 
 VARIANT_ENUM_CAST(ActionIdentifier);

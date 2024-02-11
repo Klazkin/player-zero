@@ -40,6 +40,7 @@ void Action::_bind_methods()
     BIND_ENUM_CONSTANT(NETHERSWAP);
     BIND_ENUM_CONSTANT(LOS_ACTION);
     BIND_ENUM_CONSTANT(DETONATION);
+    BIND_ENUM_CONSTANT(DEBUG_KILL);
 }
 
 bool Action::_is_castable(const CastInfo &cast_info)
