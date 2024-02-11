@@ -21,11 +21,19 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_only_units"), &Surface::get_only_units);
     ClassDB::bind_method(D_METHOD("get_shortest_path", "path_start", "path_end"), &Surface::get_shortest_path);
     ClassDB::bind_method(D_METHOD("get_ray_collision", "ray_start", "ray_end"), &Surface::get_ray_collision);
+    ClassDB::bind_method(D_METHOD("turn_generate"), &Surface::turn_generate);
+    ClassDB::bind_method(D_METHOD("turn_get_order"), &Surface::turn_get_order);
+    ClassDB::bind_method(D_METHOD("turn_get_current_unit"), &Surface::turn_get_current_unit);
+    ClassDB::bind_method(D_METHOD("turn_next"), &Surface::turn_next);
+
+    ADD_SIGNAL(MethodInfo("turn_started", PropertyInfo(Variant::OBJECT, "unit")));
+    ADD_SIGNAL(MethodInfo("turn_ended", PropertyInfo(Variant::OBJECT, "unit")));
 }
 
 Surface::Surface()
 {
     std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> element_positions;
+    std::vector<Ref<Unit>> unit_order;
 }
 
 Surface::~Surface()
@@ -238,4 +246,61 @@ TypedArray<Unit> Surface::get_only_units() const
     }
 
     return arr;
+}
+
+bool unit_speed_compare(Ref<Unit> u1, Ref<Unit> u2)
+{
+    return u1->get_speed() < u2->get_speed(); // TODO handle speed ties
+}
+
+void Surface::turn_generate()
+{
+    if (!unit_order.empty())
+    {
+        return;
+    }
+    for (auto pair : element_positions)
+    {
+        if (pair.second->is_unit())
+        {
+            unit_order.push_back(pair.second);
+        }
+    }
+
+    std::sort(unit_order.begin(), unit_order.end(), unit_speed_compare);
+    // duplicate code is bad...
+    emit_signal("turn_started", turn_get_current_unit());
+    turn_get_current_unit()->trigger_on_start_turn_subscribers();
+}
+
+TypedArray<Unit> Surface::turn_get_order() const
+{
+    TypedArray<Unit> arr;
+
+    for (auto u : unit_order)
+    {
+        arr.append(u);
+    }
+
+    return arr;
+}
+
+Ref<Unit> Surface::turn_get_current_unit() const
+{
+    if (unit_order.empty())
+    {
+        return nullptr;
+    }
+    return unit_order.back();
+}
+
+void Surface::turn_next()
+{
+    emit_signal("turn_ended", turn_get_current_unit());
+    unit_order.pop_back();
+    if (!unit_order.empty())
+    {
+        emit_signal("turn_started", turn_get_current_unit());
+        turn_get_current_unit()->trigger_on_start_turn_subscribers();
+    }
 }

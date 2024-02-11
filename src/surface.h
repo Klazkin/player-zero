@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <algorithm>
 
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/vector2i.hpp>
@@ -25,6 +26,7 @@ namespace godot
 
     private:
         std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> element_positions;
+        std::vector<Ref<Unit>> unit_order;
 
     protected:
         static void _bind_methods();
@@ -45,7 +47,11 @@ namespace godot
         Ref<SurfaceElement> lift_element(const Vector2i &p_pos);
 
         TypedArray<Unit> get_only_units() const; // bad implementation pattern
-        // void remove_if_dead(const Ref<SurfaceElement> p_element);
+
+        void turn_generate();
+        TypedArray<Unit> turn_get_order() const;
+        Ref<Unit> turn_get_current_unit() const;
+        void turn_next();
     };
 
 }
