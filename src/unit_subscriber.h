@@ -10,6 +10,7 @@ enum UnitSubscriberIdentifier
     STATUS_SLOW,
     STATUS_COUNTDOWN,
     STATUS_SHACLES,
+    STATUS_DUSTED
 };
 
 class UnitSubscriber

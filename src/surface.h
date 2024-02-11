@@ -36,7 +36,7 @@ namespace godot
         ~Surface();
 
         std::vector<Vector2i> get_free_neighbors(const Vector2i p_pos) const;
-        PackedVector2Array get_shortest_path(const Vector2i path_start, const Vector2i path_end) const;
+        PackedVector2Array get_shortest_path(const Vector2i path_start, const Vector2i path_end, const bool to_neighbor = false) const;
         Vector2i get_ray_collision(const Vector2i ray_start, const Vector2i ray_end) const;
 
         bool is_position_available(const Vector2i &p_pos) const; // TODO is there any point to pass Vector2i as ref?
@@ -47,11 +47,13 @@ namespace godot
         Ref<SurfaceElement> lift_element(const Vector2i &p_pos);
 
         TypedArray<Unit> get_only_units() const; // bad implementation pattern
+        std::vector<Ref<Unit>> get_only_units_vec() const;
 
         void turn_generate();
         TypedArray<Unit> turn_get_order() const;
         Ref<Unit> turn_get_current_unit() const;
         void turn_next();
+        void _start_current_units_turn();
     };
 
 }

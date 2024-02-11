@@ -100,3 +100,11 @@ ShaclesChild::~ShaclesChild()
         delete link_counter;
     }
 }
+
+Dusted::Dusted(Unit *p_target_ptr, const int p_duration) : Status(STATUS_DUSTED, p_target_ptr, p_duration) {}
+
+void Dusted::on_turn_start()
+{
+    StatModifiers sm = target_ptr->get_stat_modifiers();
+    sm.speed -= 2;
+}

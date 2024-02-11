@@ -1,6 +1,7 @@
 #include "handlers.h"
 #include <set>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <algorithm>
 
 using namespace godot;
 
@@ -53,12 +54,29 @@ void register_handlers()
         DEBUG_KILL,
         check_cell_taken,
         cast_debug_kill);
+
+    Action::register_action(
+        WISPSPARKS,
+        [](const CastInfo &c)
+        { return check_line_of_sight(c) && check_cell_taken(c) && check_cast_distance(c, 4); },
+        cast_wispsparks);
+
+    Action::register_action(
+        BONEDUST,
+        check_always_allow,
+        cast_bonedust);
+
+    Action::register_action(
+        BONESPARKS,
+        check_always_allow,
+        cast_bonesparks);
 }
 
 void register_combinations()
 {
     Action::register_combination(BLOODDRAWING, GROUNDRAISE, ALTAR);
     Action::register_combination(TREAD, BLOODDRAWING, NETHERSWAP);
+    Action::register_combination(BONEDUST, WISPSPARKS, BONESPARKS);
 }
 
 bool check_always_allow(const CastInfo &cast)
@@ -171,6 +189,49 @@ void cast_debug_kill(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
     target_element->hit(99999);
+}
+
+void cast_wispsparks(const CastInfo &cast)
+{
+    Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
+    target_element->hit(2);
+}
+
+void cast_bonedust(const CastInfo &cast)
+{
+    for (auto potential_target : cast.surface->get_only_units_vec())
+    {
+        // ignore alies
+        if (cast.caster->is_unit() && potential_target->get_faction() == as_unit_ptr(cast.caster)->get_faction())
+        {
+            continue;
+        }
+
+        if ((potential_target->get_position() - cast.caster->get_position()).length_squared() <= 4 * 4)
+        {
+            potential_target->add_subscriber(new Dusted(*potential_target, 2));
+            StatModifiers sm = potential_target->get_stat_modifiers();
+            sm.speed -= 2;
+        }
+    }
+}
+
+void cast_bonesparks(const CastInfo &cast)
+{
+    for (auto potential_target : cast.surface->get_only_units_vec())
+    {
+        // ignore alies
+        if (cast.caster->is_unit() && potential_target->get_faction() == as_unit_ptr(cast.caster)->get_faction())
+        {
+            continue;
+        }
+
+        if ((potential_target->get_position() - cast.caster->get_position()).length_squared() <= 4 * 4 &&
+            potential_target->has_subscriber(STATUS_DUSTED))
+        {
+            potential_target->hit(10);
+        }
+    }
 }
 
 void multicaster(

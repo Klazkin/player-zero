@@ -41,6 +41,9 @@ void Action::_bind_methods()
     BIND_ENUM_CONSTANT(LOS_ACTION);
     BIND_ENUM_CONSTANT(DETONATION);
     BIND_ENUM_CONSTANT(DEBUG_KILL);
+    BIND_ENUM_CONSTANT(WISPSPARKS);
+    BIND_ENUM_CONSTANT(BONEDUST);
+    BIND_ENUM_CONSTANT(BONESPARKS);
 }
 
 bool Action::_is_castable(const CastInfo &cast_info)

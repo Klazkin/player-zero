@@ -66,4 +66,13 @@ public:
     ~ShaclesChild();
 };
 
+class Dusted : public Status
+{
+
+public:
+    Dusted(Unit *p_target_ptr, const int p_duration);
+
+    void on_turn_start() override;
+};
+
 #endif

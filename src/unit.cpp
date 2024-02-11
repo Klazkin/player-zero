@@ -18,14 +18,24 @@ void Unit::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_speed", "p_speed"), &Unit::set_speed);
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "speed"), "set_speed", "get_speed");
 
+    ClassDB::bind_method(D_METHOD("get_faction"), &Unit::get_faction);
+    ClassDB::bind_method(D_METHOD("set_faction", "p_faction"), &Unit::set_faction);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "faction"), "set_faction", "get_faction");
+
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
-    ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed")));
+    ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed"))); // TODO add signals for stat modifiers
+
+    BIND_ENUM_CONSTANT(UNDEFINED);
+    BIND_ENUM_CONSTANT(PLAYER);
+    BIND_ENUM_CONSTANT(MONSTER);
 }
 
 Unit::Unit()
 {
     std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber> subscribers;
+    std::unordered_set<ActionIdentifier> action_pool;
+    std::vector<ActionIdentifier> action_hand;
     max_health = 20;
     health = max_health;
     speed = 1;
@@ -60,7 +70,7 @@ void Unit::set_max_health(const int p_max_health)
 
 int Unit::get_max_health() const
 {
-    return max_health;
+    return max_health + stat_modifiers.max_health;
 }
 
 void Unit::set_health(const int p_health)
@@ -82,7 +92,17 @@ void Unit::set_speed(const int p_speed)
 
 int Unit::get_speed() const
 {
-    return speed;
+    return speed + stat_modifiers.speed;
+}
+
+void godot::Unit::set_faction(const Faction p_faction)
+{
+    faction = p_faction;
+}
+
+Faction godot::Unit::get_faction() const
+{
+    return faction;
 }
 
 bool Unit::is_unit() const
@@ -97,12 +117,17 @@ bool Unit::is_dead() const
 
 void Unit::add_subscriber(UnitSubscriber *subscriber)
 {
-    if (subscribers.count(subscriber->get_id()) > 0)
+    if (has_subscriber(subscriber->get_id()))
     {
         remove_subscriber(subscriber->get_id());
     }
 
     subscribers[subscriber->get_id()] = subscriber;
+}
+
+bool Unit::has_subscriber(UnitSubscriberIdentifier id) const
+{
+    return subscribers.count(id) > 0;
 }
 
 void Unit::remove_subscriber(UnitSubscriberIdentifier id)
@@ -125,4 +150,15 @@ void Unit::trigger_on_hit_subscribers(int damage)
     {
         key_value_pair.second->on_hit(damage);
     }
+}
+
+void godot::Unit::reset_stat_modifiers()
+{
+    stat_modifiers.speed = 0;
+    stat_modifiers.max_health = 0;
+}
+
+StatModifiers Unit::get_stat_modifiers()
+{
+    return stat_modifiers;
 }
