@@ -21,7 +21,7 @@ void Unit::_bind_methods()
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
     ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed")));
 
-    ClassDB::bind_method(D_METHOD("demo_trigger"), &Unit::trigger_all_subscribers);
+    ClassDB::bind_method(D_METHOD("demo_trigger"), &Unit::trigger_on_start_turn_subscribers);
 }
 
 Unit::Unit()
@@ -40,6 +40,7 @@ Unit::~Unit()
 int Unit::hit(int damage)
 {
     set_health(get_health() - damage);
+    trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also
     emit_signal("hurt", damage);
     return 1; // TODO return damage change
 }
@@ -103,10 +104,18 @@ void Unit::remove_subscriber(UnitSubscriberIdentifier id)
     subscribers.erase(id);
 }
 
-void Unit::trigger_all_subscribers()
+void Unit::trigger_on_start_turn_subscribers()
 {
     for (auto key_value_pair : subscribers)
     {
-        key_value_pair.second->trigger();
+        key_value_pair.second->on_turn_start();
+    }
+}
+
+void Unit::trigger_on_hit_subscribers(int damage)
+{
+    for (auto key_value_pair : subscribers)
+    {
+        key_value_pair.second->on_hit(damage);
     }
 }

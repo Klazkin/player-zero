@@ -41,7 +41,8 @@ namespace godot
 
         void add_subscriber(UnitSubscriber *subscriber);
         void remove_subscriber(UnitSubscriberIdentifier id);
-        void trigger_all_subscribers();
+        void trigger_on_start_turn_subscribers();
+        void trigger_on_hit_subscribers(int damage);
     };
 
 }

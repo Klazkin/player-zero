@@ -37,6 +37,17 @@ void register_handlers()
         LOS_ACTION,
         check_line_of_sight,
         cast_nothing);
+
+    Action::register_action(
+        DETONATION,
+        check_unit_only,
+        cast_detonate);
+
+    Action::register_action(
+        ETERNALSHACLES,
+        [](const CastInfo &c)
+        { return check_not_self_cast(c) && check_cell_taken(c); },
+        cast_shacle);
 }
 
 void register_combinations()
@@ -67,7 +78,12 @@ bool check_unit_only(const CastInfo &cast)
 
 bool check_self_cast(const CastInfo &cast)
 {
-    return cast.caster == cast.surface->get_element(cast.target);
+    return cast.caster->get_position() == cast.target;
+}
+
+bool check_not_self_cast(const CastInfo &cast)
+{
+    return !check_self_cast(cast);
 }
 
 bool check_is_direction_valid(const CastInfo &cast)
@@ -127,6 +143,19 @@ void cast_swap(const CastInfo &cast)
     cast.surface->lift_element(cast.target);
     cast.surface->place_element(cast.caster->get_position(), target_element);
     cast.surface->place_element(cast.target, cast.caster);
+}
+
+void cast_detonate(const CastInfo &cast)
+{
+    Unit *target_unit = Object::cast_to<Unit>(*cast.surface->get_element(cast.target)); // TODO terrible cast, get rid of it
+    target_unit->add_subscriber(new Countdown(target_unit, 2));
+}
+
+void cast_shacle(const CastInfo &cast)
+{
+    Unit *caster_unit = Object::cast_to<Unit>(*cast.caster);
+    Unit *target_unit = Object::cast_to<Unit>(*cast.surface->get_element(cast.target)); // TODO terrible cast, get rid of it
+    caster_unit->add_subscriber(new Shacles(caster_unit, target_unit, 3));
 }
 
 void multicaster(

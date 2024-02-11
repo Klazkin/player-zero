@@ -16,7 +16,12 @@ UnitSubscriberIdentifier UnitSubscriber::get_id() const
     return sub_id;
 }
 
-void UnitSubscriber::trigger()
+void UnitSubscriber::on_turn_start()
 {
-    godot::UtilityFunctions::print("Trigged generic usub");
+    godot::UtilityFunctions::print("Trigged generic usub on_turn_start");
+}
+
+void UnitSubscriber::on_hit(int damage)
+{
+    godot::UtilityFunctions::print("Trigged generic usub on_hit");
 }

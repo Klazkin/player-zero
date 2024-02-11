@@ -29,7 +29,8 @@ enum ActionIdentifier
     ETERNALSHACLES,
     ALTAR,
     NETHERSWAP,
-    LOS_ACTION
+    LOS_ACTION,
+    DETONATION
 };
 
 VARIANT_ENUM_CAST(ActionIdentifier);

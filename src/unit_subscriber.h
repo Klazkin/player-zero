@@ -4,6 +4,8 @@ enum UnitSubscriberIdentifier
     AMROR,
     STATUS_BURN,
     STATUS_SLOW,
+    STATUS_COUNTDOWN,
+    STATUS_SHACLES
 };
 
 class UnitSubscriber
@@ -17,5 +19,6 @@ public:
 
     UnitSubscriberIdentifier get_id() const;
 
-    virtual void trigger();
+    virtual void on_turn_start();
+    virtual void on_hit(int damage);
 };

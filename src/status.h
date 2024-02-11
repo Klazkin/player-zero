@@ -16,7 +16,7 @@ protected:
 public:
     virtual void decrease_duration();
     virtual int get_duration() const;
-    void trigger() override;
+    void on_turn_start() override;
 };
 
 class BurnStatus : public Status
@@ -25,6 +25,28 @@ class BurnStatus : public Status
 public:
     BurnStatus(Unit *p_target_ptr, const int p_duration);
 
-    void trigger() override;
+    void on_turn_start() override;
 };
+
+class Countdown : public Status
+{
+
+public:
+    Countdown(Unit *p_target_ptr, const int p_duration);
+
+    void on_turn_start() override;
+};
+
+class Shacles : public Status
+{
+
+private:
+    Unit *shacle_target_ptr = nullptr;
+
+public:
+    Shacles(Unit *caster_ptr, Unit *p_target_ptr, const int p_duration);
+
+    void on_hit(int damage) override;
+};
+
 #endif
