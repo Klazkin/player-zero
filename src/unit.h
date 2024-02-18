@@ -36,9 +36,9 @@ namespace godot
         // std::vector<ActionIdentifier> action_hand;
         StatModifiers stat_modifiers;
         Faction faction = UNDEFINED;
+        int base_max_health;
+        int base_speed;
         int health;
-        int max_health;
-        int speed;
 
     protected:
         static void _bind_methods();
@@ -52,10 +52,12 @@ namespace godot
         void set_health(const int p_health); // todo make a distinction between base stats and modified
         int get_health() const;
 
-        void set_max_health(const int p_max_health);
+        void set_base_max_health(const int p_max_health);
+        int get_base_max_health() const;
         int get_max_health() const;
 
-        void set_speed(const int p_speed);
+        void set_base_speed(const int p_speed);
+        int get_base_speed() const;
         int get_speed() const;
 
         void set_faction(const Faction p_faction);
@@ -71,7 +73,8 @@ namespace godot
         void trigger_on_hit_subscribers(int damage);
 
         void reset_stat_modifiers();
-        StatModifiers get_stat_modifiers();
+        StatModifiers &get_stat_modifiers();
+        TypedArray<int> get_subscriber_ids() const;
 
         // void add_action_to_pool(){};
         // void add_action_to_hand(){};

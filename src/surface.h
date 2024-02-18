@@ -53,7 +53,8 @@ namespace godot
         TypedArray<Unit> turn_get_order() const;
         Ref<Unit> turn_get_current_unit() const;
         void turn_next();
-        void _start_current_units_turn();
+        void _start_current_units_turn(); // todo just make private
+        void emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target);
     };
 
 }

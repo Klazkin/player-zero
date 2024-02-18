@@ -6,25 +6,32 @@ using namespace godot;
 
 void Unit::_bind_methods()
 {
+    ClassDB::bind_method(D_METHOD("get_base_max_health"), &Unit::get_base_max_health);
+    ClassDB::bind_method(D_METHOD("set_base_max_health", "p_max_health"), &Unit::set_base_max_health);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_max_health"), "set_base_max_health", "get_base_max_health");
     ClassDB::bind_method(D_METHOD("get_max_health"), &Unit::get_max_health);
-    ClassDB::bind_method(D_METHOD("set_max_health", "p_max_health"), &Unit::set_max_health);
-    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "max_health"), "set_max_health", "get_max_health");
 
     ClassDB::bind_method(D_METHOD("get_health"), &Unit::get_health);
     ClassDB::bind_method(D_METHOD("set_health", "p_health"), &Unit::set_health);
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "health"), "set_health", "get_health");
 
+    ClassDB::bind_method(D_METHOD("get_base_speed"), &Unit::get_base_speed);
+    ClassDB::bind_method(D_METHOD("set_base_speed", "p_speed"), &Unit::set_base_speed);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_speed"), "set_base_speed", "get_base_speed");
     ClassDB::bind_method(D_METHOD("get_speed"), &Unit::get_speed);
-    ClassDB::bind_method(D_METHOD("set_speed", "p_speed"), &Unit::set_speed);
-    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "speed"), "set_speed", "get_speed");
 
     ClassDB::bind_method(D_METHOD("get_faction"), &Unit::get_faction);
     ClassDB::bind_method(D_METHOD("set_faction", "p_faction"), &Unit::set_faction);
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "faction"), "set_faction", "get_faction");
 
+    ClassDB::bind_method(D_METHOD("get_subscriber_ids"), &Unit::get_subscriber_ids);
+    ClassDB::bind_method(D_METHOD("is_dead"), &Unit::is_dead);
+
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
     ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed"))); // TODO add signals for stat modifiers
+    ADD_SIGNAL(MethodInfo("subscriber_applied", PropertyInfo(Variant::INT, "subscriber")));
+    ADD_SIGNAL(MethodInfo("subscriber_removed", PropertyInfo(Variant::INT, "subscriber")));
 
     BIND_ENUM_CONSTANT(UNDEFINED);
     BIND_ENUM_CONSTANT(PLAYER);
@@ -36,9 +43,9 @@ Unit::Unit()
     std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber> subscribers;
     std::unordered_set<ActionIdentifier> action_pool;
     std::vector<ActionIdentifier> action_hand;
-    max_health = 20;
-    health = max_health;
-    speed = 1;
+    base_max_health = 20;
+    health = base_max_health;
+    base_speed = 1;
 }
 
 Unit::~Unit()
@@ -62,15 +69,20 @@ int Unit::hit(int damage)
     return 1; // TODO return damage change
 }
 
-void Unit::set_max_health(const int p_max_health)
+void Unit::set_base_max_health(const int p_max_health)
 {
-    max_health = p_max_health;
+    base_max_health = p_max_health;
     emit_signal("max_health_changed", p_max_health);
+}
+
+int Unit::get_base_max_health() const
+{
+    return base_max_health;
 }
 
 int Unit::get_max_health() const
 {
-    return max_health + stat_modifiers.max_health;
+    return base_max_health + stat_modifiers.max_health;
 }
 
 void Unit::set_health(const int p_health)
@@ -84,15 +96,20 @@ int Unit::get_health() const
     return health;
 }
 
-void Unit::set_speed(const int p_speed)
+void Unit::set_base_speed(const int p_speed)
 {
-    speed = p_speed;
+    base_speed = p_speed;
     emit_signal("speed_changed", p_speed);
+}
+
+int Unit::get_base_speed() const
+{
+    return base_speed;
 }
 
 int Unit::get_speed() const
 {
-    return speed + stat_modifiers.speed;
+    return base_speed + stat_modifiers.speed;
 }
 
 void godot::Unit::set_faction(const Faction p_faction)
@@ -123,6 +140,7 @@ void Unit::add_subscriber(UnitSubscriber *subscriber)
     }
 
     subscribers[subscriber->get_id()] = subscriber;
+    emit_signal("subscriber_applied", subscriber->get_id());
 }
 
 bool Unit::has_subscriber(UnitSubscriberIdentifier id) const
@@ -134,6 +152,7 @@ void Unit::remove_subscriber(UnitSubscriberIdentifier id)
 {
     delete subscribers[id];
     subscribers.erase(id);
+    emit_signal("subscriber_removed", id);
 }
 
 void Unit::trigger_on_start_turn_subscribers()
@@ -158,7 +177,18 @@ void godot::Unit::reset_stat_modifiers()
     stat_modifiers.max_health = 0;
 }
 
-StatModifiers Unit::get_stat_modifiers()
+StatModifiers &Unit::get_stat_modifiers()
 {
     return stat_modifiers;
+}
+
+TypedArray<int> Unit::get_subscriber_ids() const
+{
+    TypedArray<int> arr;
+    for (auto key_value_pair : subscribers)
+    {
+        arr.append(key_value_pair.second->get_id());
+    }
+
+    return arr;
 }

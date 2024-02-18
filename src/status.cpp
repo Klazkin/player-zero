@@ -105,6 +105,6 @@ Dusted::Dusted(Unit *p_target_ptr, const int p_duration) : Status(STATUS_DUSTED,
 
 void Dusted::on_turn_start()
 {
-    StatModifiers sm = target_ptr->get_stat_modifiers();
+    StatModifiers &sm = target_ptr->get_stat_modifiers();
     sm.speed -= 2;
 }

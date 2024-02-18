@@ -210,7 +210,7 @@ void cast_bonedust(const CastInfo &cast)
         if ((potential_target->get_position() - cast.caster->get_position()).length_squared() <= 4 * 4)
         {
             potential_target->add_subscriber(new Dusted(*potential_target, 2));
-            StatModifiers sm = potential_target->get_stat_modifiers();
+            StatModifiers &sm = potential_target->get_stat_modifiers();
             sm.speed -= 2;
         }
     }

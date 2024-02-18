@@ -28,6 +28,10 @@ void Surface::_bind_methods()
 
     ADD_SIGNAL(MethodInfo("turn_started", PropertyInfo(Variant::OBJECT, "unit")));
     ADD_SIGNAL(MethodInfo("turn_ended", PropertyInfo(Variant::OBJECT, "unit")));
+    ADD_SIGNAL(MethodInfo("action_cast",
+                          PropertyInfo(Variant::INT, "action"),
+                          PropertyInfo(Variant::OBJECT, "caster"),
+                          PropertyInfo(Variant::VECTOR2I, "target")));
 }
 
 Surface::Surface()
@@ -291,7 +295,7 @@ void Surface::turn_generate()
     }
 
     std::sort(unit_order.begin(), unit_order.end(), unit_speed_compare);
-    _start_current_units_turn();
+    _start_current_units_turn(); // first units turn is begun automatically, maybe defer to dif. func?
 }
 
 void Surface::_start_current_units_turn()
@@ -303,6 +307,12 @@ void Surface::_start_current_units_turn()
         cur_unit->reset_stat_modifiers();
         cur_unit->trigger_on_start_turn_subscribers();
     }
+}
+
+void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target)
+{
+    emit_signal("action_cast", action, caster, target); // todo redundant? use action bundle instead maybe
+    //... or not because the casts come from player also
 }
 
 TypedArray<Unit> Surface::turn_get_order() const

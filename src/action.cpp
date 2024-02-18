@@ -53,11 +53,17 @@ bool Action::_is_castable(const CastInfo &cast_info)
         return false;
     }
 
+    if (cast_info.surface->turn_get_current_unit() != cast_info.caster)
+    {
+        return false;
+    }
+
     return function_registry[cast_info.action].check_func(cast_info);
 }
 
 void Action::_cast_action(const CastInfo &cast_info)
 {
+    cast_info.surface->emit_action_cast(cast_info.action, cast_info.caster, cast_info.target);
     function_registry[cast_info.action].cast_func(cast_info);
 }
 
