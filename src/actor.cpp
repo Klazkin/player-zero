@@ -56,7 +56,7 @@ void Actor::_bind_methods()
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "puppet", "surface"), &Actor::get_actions_from_decision_tree);
 }
 
-Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> puppet, Ref<Surface> surface)
+Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
 {
     Ref<ActionBundle> ab = memnew(ActionBundle);
 
@@ -65,12 +65,12 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> puppet, Ref<Su
 
     for (auto u : units)
     {
-        if (u->get_faction() == puppet->get_faction())
+        if (u->get_faction() == caster->get_faction())
         {
             continue;
         }
 
-        if ((u->get_position() - puppet->get_position()).length_squared() >= 8 * 8)
+        if ((u->get_position() - caster->get_position()).length_squared() >= 8 * 8)
         {
             continue;
         }
@@ -85,36 +85,40 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> puppet, Ref<Su
 
     if (target == nullptr)
     {
-        UtilityFunctions::print("returning ab, nothing found near");
+        UtilityFunctions::print("DTA: Returning ab, nothing found near.");
         return ab;
     }
 
-    if ((target->get_position() - puppet->get_position()).length_squared() >= 4 * 4)
+    if ((target->get_position() - caster->get_position()).length_squared() >= 4 * 4)
     {
-        UtilityFunctions::print("Adding tread cast");
-        PackedVector2Array path = surface->get_shortest_path(puppet->get_position(), target->get_position(), true);
+        UtilityFunctions::print("DTA: Adding tread cast");
+        PackedVector2Array path = surface->get_shortest_path(caster->get_position(), target->get_position(), true);
         UtilityFunctions::print(path);
         Vector2i tread_target = path[path.size() - 4]; // TODO may cause issues
-        ab->push_back_cast({TREAD, surface, puppet, tread_target});
+        ab->push_back_cast({TREAD, surface, caster, tread_target});
     }
 
-    if (target->has_subscriber(STATUS_DUSTED))
+    if (target->has_subscriber(STATUS_DUSTED) && caster->is_in_hand(WISPSPARKS) && caster->is_in_hand(BONEDUST))
     {
-        UtilityFunctions::print("Adding bonesparks cast");
-        ab->push_back_cast({BONESPARKS, surface, puppet, target->get_position()});
+        Action::combine(caster, BONEDUST, WISPSPARKS);
+        UtilityFunctions::print("DTA: Adding bonesparks cast");
+        ab->push_back_cast({BONESPARKS, surface, caster, target->get_position()});
+        return ab;
     }
-    else
-    {
-        CastInfo ci = {WISPSPARKS, surface, puppet, target->get_position()};
-        if (check_line_of_sight(ci))
-        {
-            UtilityFunctions::print("Adding wispsparks cast");
-            ab->push_back_cast(ci);
-        }
 
-        UtilityFunctions::print("Adding bonedust cast");
-        ab->push_back_cast({BONEDUST, surface, puppet, target->get_position()});
-    };
+    CastInfo ci = {WISPSPARKS, surface, caster, target->get_position()};
+
+    if (caster->is_in_hand(WISPSPARKS) && check_line_of_sight(ci))
+    {
+        UtilityFunctions::print("DTA: Adding wispsparks cast");
+        ab->push_back_cast(ci);
+    }
+
+    if (caster->is_in_hand(BONEDUST) && !target->has_subscriber(STATUS_DUSTED))
+    {
+        UtilityFunctions::print("DTA: Adding bonedust cast");
+        ab->push_back_cast({BONEDUST, surface, caster, target->get_position()});
+    }
 
     return ab;
 }

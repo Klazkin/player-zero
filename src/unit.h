@@ -82,6 +82,7 @@ namespace godot
         void set_hand(const TypedArray<int> &p_hand);
         TypedArray<int> get_hand() const;
 
+        bool is_in_deck(const ActionIdentifier id) const;
         bool is_in_hand(const ActionIdentifier id) const;
         void remove_from_hand(const ActionIdentifier id);
         void add_to_hand(const ActionIdentifier id);

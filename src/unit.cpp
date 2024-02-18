@@ -245,6 +245,11 @@ TypedArray<int> Unit::get_hand() const
     return arr;
 }
 
+bool Unit::is_in_deck(const ActionIdentifier id) const
+{
+    return deck.find(id) != deck.end();
+}
+
 bool Unit::is_in_hand(const ActionIdentifier id) const
 {
     return hand.find(id) != hand.end();
@@ -264,6 +269,11 @@ void godot::Unit::add_to_hand(const ActionIdentifier id)
 
 void Unit::refill_hand()
 {
+    if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
+    {
+        add_to_hand(ActionIdentifier::TREAD); // Free refill for tread
+    }
+
     std::vector<ActionIdentifier> refill_candidates;
 
     std::copy_if(deck.begin(), deck.end(), std::back_inserter(refill_candidates),

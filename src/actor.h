@@ -35,7 +35,7 @@ protected:
     static void _bind_methods();
 
 public:
-    static Ref<ActionBundle> get_actions_from_decision_tree(Ref<Unit> puppet, Ref<Surface> surface);
+    static Ref<ActionBundle> get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface);
 };
 
 #endif
