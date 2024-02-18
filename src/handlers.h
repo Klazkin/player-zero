@@ -5,6 +5,9 @@
 #include "status.h"
 #include "surface_element.h"
 #include "destructible_element.h"
+#include <vector>
+
+using namespace std;
 
 void register_handlers();
 void register_combinations();
@@ -30,15 +33,12 @@ void cast_debug_kill(const CastInfo &cast);
 void cast_wispsparks(const CastInfo &cast);
 void cast_bonedust(const CastInfo &cast);
 void cast_bonesparks(const CastInfo &cast);
+void cast_altar(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,
                  ActionCastType local_caster,
-                 const PackedVector2Array &points,
+                 const vector<Vector2i> &points,
                  bool is_rotatable = true);
-
-Unit *as_unit_ptr(Ref<SurfaceElement> element);
-
-PackedVector2Array generate_coilblade_points();
 
 #endif

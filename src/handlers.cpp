@@ -32,7 +32,13 @@ void register_handlers()
         COILBLADE,
         check_is_direction_valid,
         [](const CastInfo &c)
-        { multicaster(c, check_cell_taken, cast_wrathspark, generate_coilblade_points()); });
+        {
+            multicaster(
+                c,
+                check_cell_taken,
+                cast_wrathspark,
+                {Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)});
+        });
 
     Action::register_action(
         LOS_ACTION,
@@ -70,6 +76,11 @@ void register_handlers()
         BONESPARKS,
         check_always_allow,
         cast_bonesparks);
+
+    Action::register_action(
+        ALTAR,
+        check_cell_free,
+        cast_altar);
 }
 
 void register_combinations()
@@ -176,7 +187,7 @@ void cast_shacle(const CastInfo &cast)
 {
     Unit *caster_unit = as_unit_ptr(cast.caster);
     Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
-    int *link_counter = new int(2);
+    int *link_counter = new int(2); // keeps track of number of connections between the links
 
     ShaclesParent *parent = new ShaclesParent(link_counter, caster_unit, target_unit, 3);
     ShaclesChild *child = new ShaclesChild(link_counter, target_unit, 3);
@@ -234,11 +245,17 @@ void cast_bonesparks(const CastInfo &cast)
     }
 }
 
+void cast_altar(const CastInfo &cast)
+{
+    Ref<SurfaceElement> altar = memnew(DestructibleElement); // TODO check safety
+    cast.surface->place_element(cast.target, altar);
+}
+
 void multicaster(
     const CastInfo &cast,
     ActionCheckType local_checker,
     ActionCastType local_caster,
-    const PackedVector2Array &points,
+    const std::vector<Vector2i> &points,
     bool is_rotatable)
 {
     using RotatorFunc = Vector2i (*)(Vector2i);
@@ -260,27 +277,11 @@ void multicaster(
             { return Vector2i(-p.y, -p.x); };
     }
 
-    for (Point2i point : points)
+    for (Vector2i point : points)
     {
-        Point2i loc_point = lambda_rotate(cast.caster->get_position() + point);
-        CastInfo loc_cast = {COILBLADE, cast.surface, cast.caster, loc_point};
+        Vector2i loc_point = cast.caster->get_position() + lambda_rotate(point);
+        const CastInfo loc_cast = {cast.action, cast.surface, cast.caster, loc_point};
         if (local_checker(loc_cast))
             local_caster(loc_cast);
     }
-}
-
-Unit *as_unit_ptr(Ref<SurfaceElement> element)
-{
-    return Object::cast_to<Unit>(*element);
-}
-
-PackedVector2Array generate_coilblade_points()
-{ // TODO make a registry for patterns
-    PackedVector2Array points;
-    points.append(Point2i(1, 0));
-    points.append(Point2i(2, 0));
-    points.append(Point2i(0, 1));
-    points.append(Point2i(-1, 0));
-    points.append(Point2i(0, -1));
-    return points;
 }

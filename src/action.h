@@ -74,6 +74,7 @@ public:
     static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target);
     static bool has_combination(const ActionIdentifier action1, const ActionIdentifier action2);
     static ActionIdentifier get_combination(const ActionIdentifier action1, const ActionIdentifier action2);
+    static void combine(const Ref<Unit> caster, const ActionIdentifier action1, const ActionIdentifier action2);
 };
 
 #endif

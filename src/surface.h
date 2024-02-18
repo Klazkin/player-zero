@@ -50,7 +50,7 @@ namespace godot
         std::vector<Ref<Unit>> get_only_units_vec() const;
 
         void turn_generate();
-        TypedArray<Unit> turn_get_order() const;
+        TypedArray<Unit> turn_get_order_reversed() const;
         Ref<Unit> turn_get_current_unit() const;
         void turn_next();
         void _start_current_units_turn(); // todo just make private

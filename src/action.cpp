@@ -27,6 +27,7 @@ void Action::_bind_methods()
     ClassDB::bind_static_method("Action", D_METHOD("cast_action", "action", "surface", "caster", "position"), &Action::cast_action);
     ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
     ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
+    ClassDB::bind_static_method("Action", D_METHOD("combine", "caster", "action1", "action2"), &Action::combine);
 
     BIND_ENUM_CONSTANT(INVALID_ACTION)
     BIND_ENUM_CONSTANT(IDLE)
@@ -58,11 +59,21 @@ bool Action::_is_castable(const CastInfo &cast_info)
         return false;
     }
 
+    if (cast_info.caster->is_unit() && !as_unit_ptr(cast_info.caster)->is_in_hand(cast_info.action))
+    {
+        return false;
+    }
+
     return function_registry[cast_info.action].check_func(cast_info);
 }
 
 void Action::_cast_action(const CastInfo &cast_info)
 {
+    if (cast_info.caster->is_unit())
+    {
+        as_unit_ptr(cast_info.caster)->remove_from_hand(cast_info.action);
+    }
+
     cast_info.surface->emit_action_cast(cast_info.action, cast_info.caster, cast_info.target);
     function_registry[cast_info.action].cast_func(cast_info);
 }
@@ -79,6 +90,19 @@ ActionIdentifier Action::get_combination(const ActionIdentifier action1, const A
         return combination_registry[CombinationKey(action1, action2)];
     }
     return INVALID_ACTION;
+}
+
+void Action::combine(const Ref<Unit> caster, const ActionIdentifier action1, const ActionIdentifier action2)
+{
+    ActionIdentifier result = get_combination(action1, action2);
+    if (result == INVALID_ACTION)
+    {
+        return;
+    }
+
+    caster->remove_from_hand(action1);
+    caster->remove_from_hand(action2);
+    caster->add_to_hand(result);
 }
 
 void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func)

@@ -41,7 +41,7 @@ public:
     void set_position(const Vector2i p_position);
     void set_death_subscriber(UnitSubscriber *p_death_sub);
 
-    virtual bool is_unit() const;
+    virtual bool is_unit() const; //  bad method that made me write a bunch of bad code
     virtual bool is_dead() const;
 };
 

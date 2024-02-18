@@ -32,8 +32,8 @@ namespace godot
 
     private:
         std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber *> subscribers;
-        // std::unordered_set<ActionIdentifier> action_pool;
-        // std::vector<ActionIdentifier> action_hand;
+        std::unordered_set<ActionIdentifier> deck;
+        std::unordered_set<ActionIdentifier> hand;
         StatModifiers stat_modifiers;
         Faction faction = UNDEFINED;
         int base_max_health;
@@ -76,11 +76,19 @@ namespace godot
         StatModifiers &get_stat_modifiers();
         TypedArray<int> get_subscriber_ids() const;
 
-        // void add_action_to_pool(){};
-        // void add_action_to_hand(){};
-        // void get_pool();
-        // void get_hand();
+        void set_deck(const TypedArray<int> &p_deck);
+        TypedArray<int> get_deck() const;
+
+        void set_hand(const TypedArray<int> &p_hand);
+        TypedArray<int> get_hand() const;
+
+        bool is_in_hand(const ActionIdentifier id) const;
+        void remove_from_hand(const ActionIdentifier id);
+        void add_to_hand(const ActionIdentifier id);
+        void refill_hand();
     };
+
+    Unit *as_unit_ptr(Ref<SurfaceElement> element);
 }
 
 #endif

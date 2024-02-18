@@ -1,4 +1,6 @@
 #include "unit.h"
+#include <algorithm>
+#include <random>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -27,11 +29,19 @@ void Unit::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_subscriber_ids"), &Unit::get_subscriber_ids);
     ClassDB::bind_method(D_METHOD("is_dead"), &Unit::is_dead);
 
+    ClassDB::bind_method(D_METHOD("set_deck", "p_deck"), &Unit::set_deck);
+    ClassDB::bind_method(D_METHOD("get_deck"), &Unit::get_deck);
+    ClassDB::bind_method(D_METHOD("set_hand", "p_hand"), &Unit::set_hand);
+    ClassDB::bind_method(D_METHOD("get_hand"), &Unit::get_hand);
+    ClassDB::bind_method(D_METHOD("is_in_hand"), &Unit::is_in_hand);
+
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
     ADD_SIGNAL(MethodInfo("speed_changed", PropertyInfo(Variant::INT, "new_speed"))); // TODO add signals for stat modifiers
     ADD_SIGNAL(MethodInfo("subscriber_applied", PropertyInfo(Variant::INT, "subscriber")));
     ADD_SIGNAL(MethodInfo("subscriber_removed", PropertyInfo(Variant::INT, "subscriber")));
+    ADD_SIGNAL(MethodInfo("action_added_to_hand", PropertyInfo(Variant::INT, "action")));
+    ADD_SIGNAL(MethodInfo("action_removed_from_hand", PropertyInfo(Variant::INT, "action")));
 
     BIND_ENUM_CONSTANT(UNDEFINED);
     BIND_ENUM_CONSTANT(PLAYER);
@@ -41,11 +51,12 @@ void Unit::_bind_methods()
 Unit::Unit()
 {
     std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber> subscribers;
-    std::unordered_set<ActionIdentifier> action_pool;
-    std::vector<ActionIdentifier> action_hand;
+    std::unordered_set<ActionIdentifier> pool;
+    std::unordered_set<ActionIdentifier> deck;
     base_max_health = 20;
     health = base_max_health;
     base_speed = 1;
+    std::uniform_int_distribution<> distr(25, 63);
 }
 
 Unit::~Unit()
@@ -191,4 +202,85 @@ TypedArray<int> Unit::get_subscriber_ids() const
     }
 
     return arr;
+}
+
+void Unit::set_deck(const TypedArray<int> &p_deck)
+{
+    deck.clear();
+    for (int i = 0; i < p_deck.size(); i++)
+    {
+        deck.insert((ActionIdentifier)(int)p_deck[i]);
+    }
+}
+
+TypedArray<int> Unit::get_deck() const
+{
+    TypedArray<int> arr;
+    for (const auto action : deck)
+    {
+        arr.append(action);
+    }
+
+    return arr;
+}
+
+void Unit::set_hand(const TypedArray<int> &p_hand)
+{
+    hand.clear();
+    for (int i = 0; i < p_hand.size(); i++)
+    {
+        ActionIdentifier action = (ActionIdentifier)(int)p_hand[i];
+        add_to_hand(action);
+    }
+}
+
+TypedArray<int> Unit::get_hand() const
+{
+    TypedArray<int> arr;
+    for (const auto action : hand)
+    {
+        arr.append(action);
+    }
+
+    return arr;
+}
+
+bool Unit::is_in_hand(const ActionIdentifier id) const
+{
+    return hand.find(id) != hand.end();
+}
+
+void Unit::remove_from_hand(const ActionIdentifier id)
+{
+    hand.erase(id);
+    emit_signal("action_removed_from_hand", id);
+}
+
+void godot::Unit::add_to_hand(const ActionIdentifier id)
+{
+    hand.insert(id);
+    emit_signal("action_added_to_hand", id);
+}
+
+void Unit::refill_hand()
+{
+    std::vector<ActionIdentifier> refill_candidates;
+
+    std::copy_if(deck.begin(), deck.end(), std::back_inserter(refill_candidates),
+                 [&](ActionIdentifier a)
+                 { return hand.find(a) == hand.end(); });
+
+    if (refill_candidates.size() == 0)
+    {
+        std::cout << "unit hand is full, nothing to replenish\n";
+        return;
+    }
+
+    int refill_i = std::rand() / ((RAND_MAX + 1u) / (refill_candidates.size())); // apparently using modulo is biased..
+    add_to_hand(refill_candidates[refill_i]);
+}
+
+Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)
+{
+    return Object::cast_to<Unit>(*element);
 }

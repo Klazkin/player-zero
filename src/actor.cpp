@@ -94,7 +94,7 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> puppet, Ref<Su
         UtilityFunctions::print("Adding tread cast");
         PackedVector2Array path = surface->get_shortest_path(puppet->get_position(), target->get_position(), true);
         UtilityFunctions::print(path);
-        Vector2i tread_target = path[path.size() - 5]; // TODO may cause issues
+        Vector2i tread_target = path[path.size() - 4]; // TODO may cause issues
         ab->push_back_cast({TREAD, surface, puppet, tread_target});
     }
 

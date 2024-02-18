@@ -22,7 +22,7 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_shortest_path", "path_start", "path_end"), &Surface::get_shortest_path);
     ClassDB::bind_method(D_METHOD("get_ray_collision", "ray_start", "ray_end"), &Surface::get_ray_collision);
     ClassDB::bind_method(D_METHOD("turn_generate"), &Surface::turn_generate);
-    ClassDB::bind_method(D_METHOD("turn_get_order"), &Surface::turn_get_order);
+    ClassDB::bind_method(D_METHOD("turn_get_order_reversed"), &Surface::turn_get_order_reversed);
     ClassDB::bind_method(D_METHOD("turn_get_current_unit"), &Surface::turn_get_current_unit);
     ClassDB::bind_method(D_METHOD("turn_next"), &Surface::turn_next);
 
@@ -301,12 +301,15 @@ void Surface::turn_generate()
 void Surface::_start_current_units_turn()
 {
     Ref<Unit> cur_unit = turn_get_current_unit();
-    if (cur_unit.is_valid())
+    if (!cur_unit.is_valid())
     {
-        emit_signal("turn_started", cur_unit);
-        cur_unit->reset_stat_modifiers();
-        cur_unit->trigger_on_start_turn_subscribers();
+        return;
     }
+
+    emit_signal("turn_started", cur_unit);
+    cur_unit->reset_stat_modifiers();
+    cur_unit->trigger_on_start_turn_subscribers();
+    cur_unit->refill_hand();
 }
 
 void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target)
@@ -315,7 +318,7 @@ void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caste
     //... or not because the casts come from player also
 }
 
-TypedArray<Unit> Surface::turn_get_order() const
+TypedArray<Unit> Surface::turn_get_order_reversed() const
 {
     TypedArray<Unit> arr;
     for (auto u : unit_order)
