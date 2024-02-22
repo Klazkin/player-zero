@@ -25,7 +25,7 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("turn_generate"), &Surface::turn_generate);
     ClassDB::bind_method(D_METHOD("turn_get_order_reversed"), &Surface::turn_get_order_reversed);
     ClassDB::bind_method(D_METHOD("turn_get_current_unit"), &Surface::turn_get_current_unit);
-    ClassDB::bind_method(D_METHOD("turn_next"), &Surface::turn_next);
+    // ClassDB::bind_method(D_METHOD("turn_next"), &Surface::turn_next);
 
     ADD_SIGNAL(MethodInfo("turn_started", PropertyInfo(Variant::OBJECT, "unit")));
     ADD_SIGNAL(MethodInfo("turn_ended", PropertyInfo(Variant::OBJECT, "unit")));

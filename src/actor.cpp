@@ -35,7 +35,9 @@ bool ActionBundle::cast_until_finished()
     }
     else
     {
-        UtilityFunctions::print("Did not pass cast check");
+        UtilityFunctions::printerr("Did not pass cast check");
+        UtilityFunctions::printerr(ci.action);
+        UtilityFunctions::printerr(ci.target);
     }
 
     return cast_counter >= casts.size();
@@ -122,6 +124,7 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Su
         ab->push_back_cast({BONEDUST, surface, caster, target->get_position()});
     }
 
+    ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
     return ab;
 }
 
@@ -129,8 +132,6 @@ Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> 
 {
     Ref<ActionBundle> ab = memnew(ActionBundle);
     std::vector<CastInfo> casts;
-
-    /// determine random casting order
 
     for (auto action : caster->get_hand_set())
     {
@@ -143,7 +144,6 @@ Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> 
         return ab;
     }
 
-    // select a random one.
     CastInfo chosen_random = casts[std::rand() / ((RAND_MAX + 1u) / (casts.size()))];
     if (Action::_is_castable(chosen_random))
     {
@@ -155,7 +155,7 @@ Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> 
         UtilityFunctions::printerr(chosen_random.action);
         UtilityFunctions::printerr(chosen_random.target);
     }
-
+    ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
     return ab;
 }
 

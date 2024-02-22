@@ -8,6 +8,12 @@ using namespace godot;
 void register_handlers()
 {
     Action::register_action(
+        END_TURN,
+        check_always_allow,
+        cast_end_trun,
+        gen_simple_cast);
+
+    Action::register_action(
         COMBINE_ACTIONS,
         check_action_combination,
         cast_combine_actions,
@@ -292,6 +298,11 @@ void cast_combine_actions(const CastInfo &cast)
     ucaster->remove_from_hand(action1);
     ucaster->remove_from_hand(action2);
     ucaster->add_to_hand(result);
+}
+
+void cast_end_trun(const CastInfo &cast)
+{
+    cast.surface->turn_next();
 }
 
 void multicaster(

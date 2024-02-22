@@ -36,6 +36,7 @@ void cast_bonedust(const CastInfo &cast);
 void cast_bonesparks(const CastInfo &cast);
 void cast_altar(const CastInfo &cast);
 void cast_combine_actions(const CastInfo &cast);
+void cast_end_trun(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,

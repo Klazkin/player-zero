@@ -28,6 +28,7 @@ void Action::_bind_methods()
     ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
     ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
 
+    BIND_ENUM_CONSTANT(END_TURN);
     BIND_ENUM_CONSTANT(COMBINE_ACTIONS);
     BIND_ENUM_CONSTANT(INVALID_ACTION);
     BIND_ENUM_CONSTANT(IDLE);
@@ -69,7 +70,8 @@ bool Action::_is_castable(const CastInfo &cast_info)
 
 void Action::_cast_action(const CastInfo &cast_info)
 {
-    if (cast_info.caster->is_unit() && cast_info.action != COMBINE_ACTIONS)
+    if (cast_info.caster->is_unit() && cast_info.action != COMBINE_ACTIONS && cast_info.action != END_TURN)
+    // todo add logic for "infinite actions"
     {
         as_unit_ptr(cast_info.caster)->remove_from_hand(cast_info.action);
     }
