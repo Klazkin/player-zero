@@ -2,6 +2,7 @@
 #define STATUS_H
 
 #include "unit.h"
+#include "clone_context.h"
 #include <list>
 #include <unordered_map>
 
@@ -28,6 +29,7 @@ class BurnStatus : public Status
 
 public:
     BurnStatus(Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
 
     void on_turn_start() override;
 };
@@ -37,6 +39,7 @@ class Countdown : public Status
 
 public:
     Countdown(Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
 
     void on_turn_start() override;
 };
@@ -51,6 +54,7 @@ private:
 public:
     ShaclesParent(int *p_link_counter, Unit *caster_ptr, Unit *p_target_ptr, const int p_duration);
     ~ShaclesParent();
+    void clone_to(CloneContext &clone_context) const override;
 
     void on_hit(int damage) override;
 };
@@ -64,6 +68,7 @@ private:
 public:
     ShaclesChild(int *p_link_counter, Unit *p_target_ptr, const int p_duration);
     ~ShaclesChild();
+    void clone_to(CloneContext &clone_context) const override;
 };
 
 class Dusted : public Status
@@ -71,6 +76,7 @@ class Dusted : public Status
 
 public:
     Dusted(Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
 
     void on_turn_start() override;
 };

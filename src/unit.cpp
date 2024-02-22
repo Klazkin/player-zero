@@ -50,13 +50,6 @@ void Unit::_bind_methods()
 
 Unit::Unit()
 {
-    std::unordered_map<UnitSubscriberIdentifier, UnitSubscriber> subscribers;
-    std::unordered_set<ActionIdentifier> pool;
-    std::unordered_set<ActionIdentifier> deck;
-    base_max_health = 20;
-    health = base_max_health;
-    base_speed = 1;
-    std::uniform_int_distribution<> distr(25, 63);
 }
 
 Unit::~Unit()
@@ -68,10 +61,35 @@ Unit::~Unit()
     }
 }
 
+Ref<SurfaceElement> Unit::clone() const
+{
+    UtilityFunctions::print("Called clone on Unit");
+    Ref<Unit> clone = memnew(Unit());
+
+    clone->base_max_health = base_max_health;
+    clone->health = health;
+    clone->base_speed = base_speed;
+
+    clone->deck = deck;                     // copies
+    clone->hand = hand;                     // copies
+    clone->stat_modifiers = stat_modifiers; // copies
+
+    // clone->subscribers = subscribers; // Do not clone directly, use clone_subscribers_to instead.
+    return clone;
+}
+
+void Unit::clone_subscribers_to(CloneContext &clone_context) const
+{
+    for (auto key_value_pair : subscribers)
+    {
+        key_value_pair.second->clone_to(clone_context);
+    }
+}
+
 int Unit::hit(int damage)
 {
     set_health(get_health() - damage);
-    trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also
+    trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also? Implement damage instance struct..
     emit_signal("hurt", damage);
     if (is_dead())
     {
@@ -292,5 +310,6 @@ void Unit::refill_hand()
 
 Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)
 {
+    // todo maybe use Ref<Unit> = Ref<SurfaceElement> instead
     return Object::cast_to<Unit>(*element);
 }

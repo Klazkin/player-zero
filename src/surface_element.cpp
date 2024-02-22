@@ -20,14 +20,19 @@ void SurfaceElement::_bind_methods()
 
 SurfaceElement::SurfaceElement()
 {
-    is_on_surface = false;
-    position; // initial position undefined
 }
 
 SurfaceElement::~SurfaceElement()
 {
     UtilityFunctions::print("~SurfaceElement()");
     delete death_sub;
+}
+
+Ref<SurfaceElement> SurfaceElement::clone() const
+{
+    UtilityFunctions::print("Called clone on SurfaceElement");
+    Ref<SurfaceElement> clone = memnew(SurfaceElement());
+    return clone;
 }
 
 int SurfaceElement::hit(int damage)

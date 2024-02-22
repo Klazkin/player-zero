@@ -53,7 +53,7 @@ void register_handlers()
     Action::register_action(
         ETERNALSHACLES,
         [](const CastInfo &c)
-        { return check_not_self_cast(c) && check_cell_taken(c); },
+        { return check_not_self_cast(c) && check_unit_only(c); },
         cast_shacle);
 
     Action::register_action(

@@ -34,6 +34,7 @@ namespace godot
     public:
         Surface();
         ~Surface();
+        Ref<Surface> clone() const;
 
         std::vector<Vector2i> get_free_neighbors(const Vector2i p_pos) const;
         PackedVector2Array get_shortest_path(const Vector2i path_start, const Vector2i path_end, const bool to_neighbor = false) const;

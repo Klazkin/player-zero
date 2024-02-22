@@ -7,6 +7,7 @@
 #include "surface_element.h"
 #include "unit_subscriber.h"
 #include "action_identifier.h"
+#include "clone_context.h"
 
 enum Faction
 {
@@ -36,9 +37,9 @@ namespace godot
         std::unordered_set<ActionIdentifier> hand;
         StatModifiers stat_modifiers;
         Faction faction = UNDEFINED;
-        int base_max_health;
-        int base_speed;
-        int health;
+        int base_max_health = 20;
+        int base_speed = 0;
+        int health = 20;
 
     protected:
         static void _bind_methods();
@@ -46,10 +47,12 @@ namespace godot
     public:
         Unit();
         ~Unit();
+        Ref<SurfaceElement> clone() const override;
+        void clone_subscribers_to(CloneContext &clone_context) const;
 
         int hit(int damage) override;
 
-        void set_health(const int p_health); // todo make a distinction between base stats and modified
+        void set_health(const int p_health);
         int get_health() const;
 
         void set_base_max_health(const int p_max_health);

@@ -1,6 +1,8 @@
 #ifndef UNIT_SUBSCRIBER_H
 #define UNIT_SUBSCRIBER_H
 
+#include "clone_context.h"
+
 enum UnitSubscriberIdentifier
 {
     INVALID_SUB = -1,
@@ -21,6 +23,7 @@ protected:
 public:
     UnitSubscriber();
     virtual ~UnitSubscriber();
+    virtual void clone_to(CloneContext &clone_context) const; // int clone_context todo its a map of ref to ref
 
     UnitSubscriberIdentifier get_id() const;
 

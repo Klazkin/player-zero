@@ -44,6 +44,12 @@ void Status::on_death()
 
 BurnStatus::BurnStatus(Unit *p_target_ptr, const int p_duration) : Status(STATUS_BURN, p_target_ptr, p_duration) {}
 
+void BurnStatus::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new BurnStatus(cloned_owner, duration));
+}
+
 void BurnStatus::on_turn_start()
 {
     target_ptr->hit(5);
@@ -51,6 +57,12 @@ void BurnStatus::on_turn_start()
 }
 
 Countdown::Countdown(Unit *p_target_ptr, const int p_duration) : Status(STATUS_COUNTDOWN, p_target_ptr, p_duration) {}
+
+void Countdown::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new Countdown(cloned_owner, duration));
+}
 
 void Countdown::on_turn_start()
 {
@@ -74,6 +86,24 @@ ShaclesParent::~ShaclesParent()
         UtilityFunctions::print("delete link_counter");
         delete link_counter;
     }
+}
+
+void ShaclesParent::clone_to(CloneContext &clone_context) const
+{
+    if (*link_counter < 2) // link broken, dummy subscriber
+    {
+        // UnitSubscriber *clone = new UnitSubscriber();
+        // cloned_owner->add_subscriber(clone);
+        return;
+    }
+
+    // link unbroken, instanciate new shacles status on both units.
+    Unit *caster_clone = as_unit_ptr(clone_context[target_ptr]);
+    Unit *target_clone = as_unit_ptr(clone_context[shacle_target_ptr]);
+    int *counter_clone = new int(2);
+
+    caster_clone->add_subscriber(new ShaclesParent(counter_clone, caster_clone, target_clone, duration));
+    target_clone->add_subscriber(new ShaclesChild(counter_clone, target_clone, duration));
 }
 
 void ShaclesParent::on_hit(int damage)
@@ -101,7 +131,26 @@ ShaclesChild::~ShaclesChild()
     }
 }
 
+void ShaclesChild::clone_to(CloneContext &clone_context) const
+{
+    // if (*link_counter == 2) // Linking is handled by parent.
+    // {
+    //     return;
+    // }
+
+    // for broken links ignore.
+    // Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    // UnitSubscriber *clone = new Status(STATUS_SHACLES, target_ptr, duration);
+    // cloned_owner->add_subscriber(clone);
+}
+
 Dusted::Dusted(Unit *p_target_ptr, const int p_duration) : Status(STATUS_DUSTED, p_target_ptr, p_duration) {}
+
+void Dusted::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new Dusted(cloned_owner, duration));
+}
 
 void Dusted::on_turn_start()
 {

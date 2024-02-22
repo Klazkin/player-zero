@@ -13,6 +13,8 @@ private:
 
 public:
     SurfaceKillSubscriber(Surface *p_surface, SurfaceElement *p_element);
+    void clone_to(CloneContext &clone_context) const override;
+
     void on_death() override;
 };
 

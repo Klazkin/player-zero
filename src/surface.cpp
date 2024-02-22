@@ -3,6 +3,7 @@
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include "surface_kill_subscriber.h"
+#include "clone_context.h"
 
 using namespace godot;
 
@@ -42,6 +43,37 @@ Surface::Surface()
 
 Surface::~Surface()
 {
+    UtilityFunctions::print("~Surface()");
+}
+
+Ref<Surface> Surface::clone() const
+{
+    UtilityFunctions::print("Called clone on Surface");
+    Ref<Surface> clone = memnew(Surface());
+    CloneContext clone_context;
+
+    // positions cloning and filling out cloning context
+    for (auto key_value_pair : element_positions)
+    {
+        Ref<SurfaceElement> element_copy = key_value_pair.second->clone();
+        clone_context[key_value_pair.second] = element_copy;
+        clone->place_element(key_value_pair.first, element_copy);
+    }
+
+    // subscriber cloning
+    for (auto original_unit : get_only_units_vec())
+    {
+        original_unit->clone_subscribers_to(clone_context);
+    }
+
+    // unit order cloning
+    for (auto original_unit : unit_order)
+    {
+        clone->unit_order.push_back(clone_context[original_unit]);
+        UtilityFunctions::print(unit_order.back()->get_speed());
+    }
+
+    return clone;
 }
 
 std::vector<Vector2i> Surface::get_free_neighbors(const Vector2i pos) const
@@ -260,7 +292,7 @@ TypedArray<Unit> Surface::get_only_units() const
     return arr;
 }
 
-std::vector<Ref<Unit>> Surface::get_only_units_vec() const
+std::vector<Ref<Unit>> Surface::get_only_units_vec() const // todo this is slow
 {
     std::vector<Ref<Unit>> ret;
 

@@ -11,6 +11,11 @@ UnitSubscriber::~UnitSubscriber()
     godot::UtilityFunctions::print("~UnitSubscriber()");
 }
 
+void UnitSubscriber::clone_to(CloneContext &clone_context) const
+{
+    godot::UtilityFunctions::printerr("*UnitSubscriber::clone()");
+}
+
 UnitSubscriberIdentifier UnitSubscriber::get_id() const
 {
     return sub_id;

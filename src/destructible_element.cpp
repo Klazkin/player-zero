@@ -1,4 +1,5 @@
 #include "destructible_element.h"
+#include <godot_cpp/variant/utility_functions.hpp>
 
 void DestructibleElement::_bind_methods()
 {
@@ -12,6 +13,13 @@ DestructibleElement::DestructibleElement()
 
 DestructibleElement::~DestructibleElement()
 {
+}
+
+Ref<SurfaceElement> DestructibleElement::clone() const
+{
+    UtilityFunctions::print("Called clone on DestructibleElement");
+    Ref<DestructibleElement> clone = memnew(DestructibleElement());
+    return clone;
 }
 
 int DestructibleElement::hit(int damage)

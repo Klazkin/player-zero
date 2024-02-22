@@ -22,8 +22,8 @@ class SurfaceElement : public RefCounted
 
 private:
     UnitSubscriber *death_sub = nullptr;
-    bool is_on_surface;
-    Vector2i position;
+    bool is_on_surface = false;
+    Vector2i position; // initial position undefined
 
 protected:
     static void _bind_methods();
@@ -31,6 +31,7 @@ protected:
 public:
     SurfaceElement();
     virtual ~SurfaceElement();
+    virtual Ref<SurfaceElement> clone() const;
 
     virtual int hit(int damage);
     virtual void trigger_death();

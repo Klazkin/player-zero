@@ -19,6 +19,7 @@ protected:
 public:
     DestructibleElement();
     ~DestructibleElement();
+    Ref<SurfaceElement> clone() const override;
 
     int hit(int damage) override;
     int get_health();
