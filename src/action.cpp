@@ -27,10 +27,10 @@ void Action::_bind_methods()
     ClassDB::bind_static_method("Action", D_METHOD("cast_action", "action", "surface", "caster", "position"), &Action::cast_action);
     ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
     ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
-    ClassDB::bind_static_method("Action", D_METHOD("combine", "caster", "action1", "action2"), &Action::combine);
 
-    BIND_ENUM_CONSTANT(INVALID_ACTION)
-    BIND_ENUM_CONSTANT(IDLE)
+    BIND_ENUM_CONSTANT(COMBINE_ACTIONS);
+    BIND_ENUM_CONSTANT(INVALID_ACTION);
+    BIND_ENUM_CONSTANT(IDLE);
     BIND_ENUM_CONSTANT(WRATHSPARK);
     BIND_ENUM_CONSTANT(GROUNDRAISE);
     BIND_ENUM_CONSTANT(BLOODDRAWING);
@@ -69,13 +69,13 @@ bool Action::_is_castable(const CastInfo &cast_info)
 
 void Action::_cast_action(const CastInfo &cast_info)
 {
-    if (cast_info.caster->is_unit())
+    if (cast_info.caster->is_unit() && cast_info.action != COMBINE_ACTIONS)
     {
         as_unit_ptr(cast_info.caster)->remove_from_hand(cast_info.action);
     }
 
-    cast_info.surface->emit_action_cast(cast_info.action, cast_info.caster, cast_info.target);
     function_registry[cast_info.action].cast_func(cast_info);
+    cast_info.surface->emit_action_cast(cast_info.action, cast_info.caster, cast_info.target);
 }
 
 bool Action::has_combination(const ActionIdentifier action1, const ActionIdentifier action2)
@@ -92,22 +92,35 @@ ActionIdentifier Action::get_combination(const ActionIdentifier action1, const A
     return INVALID_ACTION;
 }
 
-void Action::combine(const Ref<Unit> caster, const ActionIdentifier action1, const ActionIdentifier action2)
+CastInfo Action::get_combination_cast(Ref<Surface> surface, Ref<SurfaceElement> caster, const ActionIdentifier action1, const ActionIdentifier action2)
 {
-    ActionIdentifier result = get_combination(action1, action2);
-    if (result == INVALID_ACTION)
-    {
-        return;
-    }
+    return {COMBINE_ACTIONS, surface, caster, Vector2i((int)action1, (int)action2)};
+}
 
-    caster->remove_from_hand(action1);
-    caster->remove_from_hand(action2);
-    caster->add_to_hand(result);
+std::vector<CastInfo> Action::generate_action_casts(const CastInfo &initial_info)
+{
+    return function_registry[initial_info.action].gen_func(initial_info);
+}
+
+ActionCheckType Action::get_action_checker(ActionIdentifier action)
+{
+    return function_registry[action].check_func;
 }
 
 void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func)
 {
-    function_registry[action] = {check_func, cast_func};
+    const ActionGeneratorType empty_generator = [](const CastInfo &)
+    {
+        std::cerr << "Empty generator called\n";
+        return std::vector<CastInfo>();
+    };
+
+    register_action(action, check_func, cast_func, empty_generator);
+}
+
+void Action::register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func, ActionGeneratorType gen_func)
+{
+    function_registry[action] = {check_func, cast_func, gen_func};
 }
 
 bool Action::is_action_registered(ActionIdentifier action)

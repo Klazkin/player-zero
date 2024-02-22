@@ -36,6 +36,8 @@ protected:
 
 public:
     static Ref<ActionBundle> get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface);
+    static Ref<ActionBundle> get_actions_from_random(Ref<Unit> caster, Ref<Surface> surface);
+    static Ref<ActionBundle> get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface); // Monte Carlo tree search
 };
 
 #endif

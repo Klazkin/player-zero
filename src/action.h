@@ -43,11 +43,13 @@ struct CombinationKey
 
 using ActionCheckType = bool (*)(const CastInfo &);
 using ActionCastType = void (*)(const CastInfo &);
+using ActionGeneratorType = std::vector<CastInfo> (*)(const CastInfo &);
 
 struct ActionFunctions
 {
-    ActionCheckType check_func; // Todo ask Siim about const ActionCheckType &check_func pattern instead
+    ActionCheckType check_func;
     ActionCastType cast_func;
+    ActionGeneratorType gen_func;
 };
 
 class Action : public Object // Abstract class
@@ -66,15 +68,22 @@ public:
     static void _cast_action(const CastInfo &cast_info); // use ActionCastType
 
     static void register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func);
+    static void register_action(ActionIdentifier action, ActionCheckType check_func, ActionCastType cast_func, ActionGeneratorType gen_func);
     static bool is_action_registered(ActionIdentifier action);
     static void register_combination(ActionIdentifier action1, ActionIdentifier action2, ActionIdentifier action_result);
+    static std::vector<CastInfo> generate_action_casts(const CastInfo &initial_info);
+    static ActionCheckType get_action_checker(ActionIdentifier action);
 
     // gd extension functions
     static bool is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target);
     static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target);
     static bool has_combination(const ActionIdentifier action1, const ActionIdentifier action2);
     static ActionIdentifier get_combination(const ActionIdentifier action1, const ActionIdentifier action2);
-    static void combine(const Ref<Unit> caster, const ActionIdentifier action1, const ActionIdentifier action2);
+    static CastInfo get_combination_cast(
+        Ref<Surface> surface,
+        Ref<SurfaceElement> caster,
+        const ActionIdentifier action1,
+        const ActionIdentifier action2);
 };
 
 #endif

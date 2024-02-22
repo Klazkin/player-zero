@@ -263,6 +263,11 @@ TypedArray<int> Unit::get_hand() const
     return arr;
 }
 
+std::unordered_set<ActionIdentifier> Unit::get_hand_set() const
+{
+    return hand;
+}
+
 bool Unit::is_in_deck(const ActionIdentifier id) const
 {
     return deck.find(id) != deck.end();

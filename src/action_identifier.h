@@ -7,6 +7,7 @@ using namespace godot;
 
 enum ActionIdentifier
 {
+    COMBINE_ACTIONS = -2,
     INVALID_ACTION = -1,
     IDLE,
     WRATHSPARK,

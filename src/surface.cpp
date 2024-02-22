@@ -350,6 +350,11 @@ void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caste
     //... or not because the casts come from player also
 }
 
+std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> godot::Surface::get_element_positions() const
+{
+    return element_positions;
+}
+
 TypedArray<Unit> Surface::turn_get_order_reversed() const
 {
     TypedArray<Unit> arr;

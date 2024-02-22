@@ -21,6 +21,7 @@ bool check_not_self_cast(const CastInfo &cast);
 bool check_is_direction_valid(const CastInfo &cast);
 bool check_cast_distance(const CastInfo &cast, int max_distance);
 bool check_line_of_sight(const CastInfo &cast);
+bool check_action_combination(const CastInfo &cast);
 
 void cast_nothing(const CastInfo &cast);
 void cast_wrathspark(const CastInfo &cast);
@@ -34,11 +35,23 @@ void cast_wispsparks(const CastInfo &cast);
 void cast_bonedust(const CastInfo &cast);
 void cast_bonesparks(const CastInfo &cast);
 void cast_altar(const CastInfo &cast);
+void cast_combine_actions(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,
                  ActionCastType local_caster,
                  const vector<Vector2i> &points,
                  bool is_rotatable = true);
+
+std::vector<CastInfo> gen_simple_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_self_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_closest_free_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_all_elements_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_all_units_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_all_other_units_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_all_units_with_checker(const CastInfo &initial_info);
+std::vector<CastInfo> gen_4direction_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info);
+std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info);
 
 #endif

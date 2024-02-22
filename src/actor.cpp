@@ -53,7 +53,9 @@ void ActionBundle::push_back_cast(const CastInfo &cast)
 
 void Actor::_bind_methods()
 {
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "puppet", "surface"), &Actor::get_actions_from_decision_tree);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "caster", "surface"), &Actor::get_actions_from_decision_tree);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_random", "caster", "surface"), &Actor::get_actions_from_random);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface"), &Actor::get_actions_from_mcts);
 }
 
 Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
@@ -100,8 +102,8 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Su
 
     if (target->has_subscriber(STATUS_DUSTED) && caster->is_in_hand(WISPSPARKS) && caster->is_in_hand(BONEDUST))
     {
-        Action::combine(caster, BONEDUST, WISPSPARKS);
         UtilityFunctions::print("DTA: Adding bonesparks cast");
+        ab->push_back_cast(Action::get_combination_cast(surface, caster, WISPSPARKS, BONEDUST));
         ab->push_back_cast({BONESPARKS, surface, caster, target->get_position()});
         return ab;
     }
@@ -118,6 +120,54 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Su
     {
         UtilityFunctions::print("DTA: Adding bonedust cast");
         ab->push_back_cast({BONEDUST, surface, caster, target->get_position()});
+    }
+
+    return ab;
+}
+
+Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> surface)
+{
+    Ref<ActionBundle> ab = memnew(ActionBundle);
+    std::vector<CastInfo> casts;
+
+    /// determine random casting order
+
+    for (auto action : caster->get_hand_set())
+    {
+        std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface, caster, Vector2i(0, 0)});
+        casts.insert(casts.end(), action_casts.begin(), action_casts.end());
+    }
+
+    if (casts.size() == 0)
+    {
+        return ab;
+    }
+
+    // select a random one.
+    CastInfo chosen_random = casts[std::rand() / ((RAND_MAX + 1u) / (casts.size()))];
+    if (Action::_is_castable(chosen_random))
+    {
+        ab->push_back_cast(chosen_random);
+    }
+    else
+    {
+        UtilityFunctions::printerr("UNCASTABLE ACTION GENERATED IN RANDOM ACTOR");
+        UtilityFunctions::printerr(chosen_random.action);
+        UtilityFunctions::printerr(chosen_random.target);
+    }
+
+    return ab;
+}
+
+const int MCTS_SIMS_PER_PLAY = 3000;
+
+Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface)
+{
+
+    Ref<ActionBundle> ab = memnew(ActionBundle);
+
+    for (auto action : caster->get_hand_set())
+    {
     }
 
     return ab;

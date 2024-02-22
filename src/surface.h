@@ -56,6 +56,7 @@ namespace godot
         void turn_next();
         void _start_current_units_turn(); // todo just make private
         void emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target);
+        std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> get_element_positions() const;
     };
 
 }
