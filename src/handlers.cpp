@@ -188,7 +188,7 @@ void cast_wrathspark(const CastInfo &cast)
 
 void cast_groundraise(const CastInfo &cast)
 {
-    Ref<SurfaceElement> ground_element = memnew(DestructibleElement); // TODO check safety
+    Ref<SurfaceElement> ground_element = memnew(DestructibleElement);
     cast.surface->place_element(cast.target, ground_element);
 }
 
@@ -278,7 +278,7 @@ void cast_bonesparks(const CastInfo &cast)
 
 void cast_altar(const CastInfo &cast)
 {
-    Ref<SurfaceElement> altar = memnew(DestructibleElement); // TODO check safety
+    Ref<SurfaceElement> altar = memnew(DestructibleElement);
     cast.surface->place_element(cast.target, altar);
 }
 
@@ -302,7 +302,7 @@ void cast_combine_actions(const CastInfo &cast)
 
 void cast_end_trun(const CastInfo &cast)
 {
-    cast.surface->turn_next();
+    cast.surface->end_current_units_turn();
 }
 
 void multicaster(
@@ -467,6 +467,13 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
         // walk towards unit for MAX_WALK distance
         Vector2i tread_target = path[std::max(1LL, path.size() - MAX_WALK)];
         ret.push_back({initial_info.action, initial_info.surface, initial_info.caster, tread_target});
+
+        // // walk towards unit for distance between 1 and MAX_WALK distance
+        // for (int i = 1; i <= std::min((long long)MAX_WALK, path.size() - 2); i++)
+        // {
+        //     Vector2i tread_target = path[std::max(1LL, path.size() - i)];
+        //     ret.push_back({initial_info.action, initial_info.surface, initial_info.caster, tread_target});
+        // }
     }
 
     return ret;

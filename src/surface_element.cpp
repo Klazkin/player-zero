@@ -24,13 +24,11 @@ SurfaceElement::SurfaceElement()
 
 SurfaceElement::~SurfaceElement()
 {
-    UtilityFunctions::print("~SurfaceElement()");
     delete death_sub;
 }
 
 Ref<SurfaceElement> SurfaceElement::clone() const
 {
-    UtilityFunctions::print("Called clone on SurfaceElement");
     Ref<SurfaceElement> clone = memnew(SurfaceElement());
     return clone;
 }
@@ -82,7 +80,7 @@ bool SurfaceElement::is_unit() const
     return false;
 }
 
-bool SurfaceElement::is_dead() const // TODO Depricated
+bool SurfaceElement::is_dead() const
 {
     return false;
 }

@@ -27,6 +27,7 @@ namespace godot
     private:
         std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> element_positions;
         std::vector<Ref<Unit>> unit_order;
+        int unit_order_counter = 0;
 
     protected:
         static void _bind_methods();
@@ -50,13 +51,16 @@ namespace godot
         TypedArray<Unit> get_only_units() const; // bad implementation pattern
         std::vector<Ref<Unit>> get_only_units_vec() const;
 
-        void turn_generate();
-        TypedArray<Unit> turn_get_order_reversed() const;
+        void generate_new_unit_order();
+        bool is_unit_order_finished() const;
+        TypedArray<Unit> turn_get_order() const;
         Ref<Unit> turn_get_current_unit() const;
-        void turn_next();
-        void _start_current_units_turn(); // todo just make private
+        void end_current_units_turn();
+        void start_current_units_turn();
         void emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target);
         std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> get_element_positions() const;
+        Faction get_winner() const;
+        int get_remaining_factions_count() const;
     };
 
 }

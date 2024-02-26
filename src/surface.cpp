@@ -22,9 +22,9 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_only_units"), &Surface::get_only_units);
     ClassDB::bind_method(D_METHOD("get_shortest_path", "path_start", "path_end"), &Surface::get_shortest_path);
     ClassDB::bind_method(D_METHOD("get_ray_collision", "ray_start", "ray_end"), &Surface::get_ray_collision);
-    ClassDB::bind_method(D_METHOD("turn_generate"), &Surface::turn_generate);
-    ClassDB::bind_method(D_METHOD("turn_get_order_reversed"), &Surface::turn_get_order_reversed);
+    ClassDB::bind_method(D_METHOD("turn_get_order"), &Surface::turn_get_order);
     ClassDB::bind_method(D_METHOD("turn_get_current_unit"), &Surface::turn_get_current_unit);
+    ClassDB::bind_method(D_METHOD("generate_new_unit_order"), &Surface::generate_new_unit_order);
     // ClassDB::bind_method(D_METHOD("turn_next"), &Surface::turn_next);
 
     ADD_SIGNAL(MethodInfo("turn_started", PropertyInfo(Variant::OBJECT, "unit")));
@@ -43,14 +43,14 @@ Surface::Surface()
 
 Surface::~Surface()
 {
-    UtilityFunctions::print("~Surface()");
 }
 
 Ref<Surface> Surface::clone() const
 {
-    UtilityFunctions::print("Called clone on Surface");
     Ref<Surface> clone = memnew(Surface());
     CloneContext clone_context;
+
+    clone->unit_order_counter = unit_order_counter;
 
     // positions cloning and filling out cloning context
     for (auto key_value_pair : element_positions)
@@ -70,7 +70,6 @@ Ref<Surface> Surface::clone() const
     for (auto original_unit : unit_order)
     {
         clone->unit_order.push_back(clone_context[original_unit]);
-        UtilityFunctions::print(unit_order.back()->get_speed());
     }
 
     return clone;
@@ -272,8 +271,8 @@ Ref<SurfaceElement> Surface::lift_element(const Vector2i &p_pos)
     {
         element_positions.erase(p_pos);
         element->set_is_on_surface(false);
+        // todo somehow remove from unit order if final lift.
     }
-
     return element;
 }
 
@@ -309,33 +308,37 @@ std::vector<Ref<Unit>> Surface::get_only_units_vec() const // todo this is slow
 
 bool unit_speed_compare(Ref<Unit> u1, Ref<Unit> u2)
 {
-    return u1->get_speed() < u2->get_speed(); // TODO handle speed ties
+    return u1->get_speed() > u2->get_speed(); // TODO handle speed ties
 }
 
-void Surface::turn_generate()
+void Surface::generate_new_unit_order()
 {
-    if (!unit_order.empty())
-    {
-        return;
-    }
+    unit_order.clear();
+    unit_order_counter = 0;
+
     for (auto pair : element_positions)
     {
-        if (pair.second->is_unit())
+        if (pair.second->is_unit() && !as_unit_ptr(pair.second)->is_dead())
         {
             unit_order.push_back(pair.second);
         }
     }
 
     std::sort(unit_order.begin(), unit_order.end(), unit_speed_compare);
-    _start_current_units_turn(); // first units turn is begun automatically, maybe defer to dif. func?
 }
 
-void Surface::_start_current_units_turn()
+bool Surface::is_unit_order_finished() const
+{
+    return unit_order_counter >= unit_order.size();
+}
+
+void Surface::start_current_units_turn()
 {
     Ref<Unit> cur_unit = turn_get_current_unit();
-    if (!cur_unit.is_valid())
+
+    if (!cur_unit.is_valid() || cur_unit->is_dead() || !cur_unit->get_is_on_surface()) // recursive loop turn_next() -> _start_current_units_turn() -> turn_next()
     {
-        return;
+        end_current_units_turn();
     }
 
     emit_signal("turn_started", cur_unit);
@@ -346,8 +349,7 @@ void Surface::_start_current_units_turn()
 
 void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target)
 {
-    emit_signal("action_cast", action, caster, target); // todo redundant? use action bundle instead maybe
-    //... or not because the casts come from player also
+    emit_signal("action_cast", action, caster, target);
 }
 
 std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> godot::Surface::get_element_positions() const
@@ -355,7 +357,43 @@ std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> godot::Surface::
     return element_positions;
 }
 
-TypedArray<Unit> Surface::turn_get_order_reversed() const
+Faction Surface::get_winner() const
+{
+    Faction ret = UNDEFINED;
+
+    for (auto u : get_only_units_vec())
+    {
+        if (ret == UNDEFINED)
+        {
+            ret = u->get_faction();
+            continue;
+        }
+
+        if (ret != u->get_faction())
+        {
+            return UNDEFINED;
+        }
+    }
+
+    return ret;
+}
+
+int Surface::get_remaining_factions_count() const
+{
+    std::unordered_set<Faction> factions;
+    for (auto u : get_only_units_vec())
+    {
+        if (u->is_dead())
+        {
+            continue; // TODO add improved dead unit clean up..
+        }
+
+        factions.insert(u->get_faction());
+    }
+    return factions.size();
+}
+
+TypedArray<Unit> Surface::turn_get_order() const
 {
     TypedArray<Unit> arr;
     for (auto u : unit_order)
@@ -365,18 +403,27 @@ TypedArray<Unit> Surface::turn_get_order_reversed() const
     return arr;
 }
 
-Ref<Unit> Surface::turn_get_current_unit() const
+Ref<Unit> Surface::turn_get_current_unit() const // todo add logic to skipp dead untis
 {
-    if (unit_order.empty())
+    if (is_unit_order_finished())
     {
         return nullptr;
     }
-    return unit_order.back();
+    return unit_order[unit_order_counter];
 }
 
-void Surface::turn_next()
+void Surface::end_current_units_turn()
 {
     emit_signal("turn_ended", turn_get_current_unit());
-    unit_order.pop_back();
-    _start_current_units_turn();
+    unit_order_counter++;
+
+    if (is_unit_order_finished())
+    {
+        generate_new_unit_order();
+    }
+
+    if (turn_get_current_unit() != nullptr)
+    {
+        start_current_units_turn();
+    }
 }

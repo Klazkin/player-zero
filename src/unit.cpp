@@ -54,7 +54,6 @@ Unit::Unit()
 
 Unit::~Unit()
 {
-    UtilityFunctions::print("~Unit()");
     for (auto key_value_pair : subscribers)
     {
         delete key_value_pair.second;
@@ -63,12 +62,12 @@ Unit::~Unit()
 
 Ref<SurfaceElement> Unit::clone() const
 {
-    UtilityFunctions::print("Called clone on Unit");
     Ref<Unit> clone = memnew(Unit());
 
     clone->base_max_health = base_max_health;
     clone->health = health;
     clone->base_speed = base_speed;
+    clone->faction = faction;
 
     clone->deck = deck;                     // copies
     clone->hand = hand;                     // copies
@@ -305,11 +304,10 @@ void Unit::refill_hand()
 
     if (refill_candidates.size() == 0)
     {
-        std::cout << "unit hand is full, nothing to replenish\n";
         return;
     }
 
-    int refill_i = std::rand() / ((RAND_MAX + 1u) / (refill_candidates.size())); // apparently using modulo is biased..
+    int refill_i = UtilityFunctions::randi_range(0, refill_candidates.size() - 1);
     add_to_hand(refill_candidates[refill_i]);
 }
 

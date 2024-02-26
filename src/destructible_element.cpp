@@ -17,7 +17,6 @@ DestructibleElement::~DestructibleElement()
 
 Ref<SurfaceElement> DestructibleElement::clone() const
 {
-    UtilityFunctions::print("Called clone on DestructibleElement");
     Ref<DestructibleElement> clone = memnew(DestructibleElement());
     return clone;
 }
