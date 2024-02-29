@@ -346,11 +346,12 @@ void Surface::start_current_units_turn()
     if (!cur_unit.is_valid() || cur_unit->is_dead() || !cur_unit->get_is_on_surface()) // recursive loop turn_next() -> _start_current_units_turn() -> turn_next()
     {
         end_current_units_turn();
+        return;
     }
 
     emit_signal("turn_started", cur_unit);
     cur_unit->reset_stat_modifiers();
-    cur_unit->trigger_on_start_turn_subscribers();
+    cur_unit->trigger_on_start_turn_subscribers(); // todo unit may die from burn, in which case its turn should still be skipped
     cur_unit->refill_hand();
 }
 

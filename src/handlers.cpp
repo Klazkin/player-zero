@@ -251,7 +251,7 @@ void cast_bonedust(const CastInfo &cast)
 
         if ((potential_target->get_position() - cast.caster->get_position()).length_squared() <= 4 * 4)
         {
-            potential_target->add_subscriber(new Dusted(*potential_target, 2));
+            potential_target->add_subscriber(new Dusted(*potential_target, 1));
             StatModifiers &sm = potential_target->get_stat_modifiers();
             sm.speed -= 2;
         }
@@ -476,6 +476,14 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
                       << "caster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n"
                       << "log over.\n";
                 }
+
+        // for (auto n : initial_info.surface->get_free_neighbors(initial_info.caster->get_position()))
+        // {
+        //     if (n == tread_target)
+        //         continue;
+        //     ret.push_back({initial_info.action, initial_info.surface, initial_info.caster, n});
+        // }
+
         // // walk towards unit for distance between 1 and MAX_WALK distance
         // for (int i = 1; i <= std::min((long long)MAX_WALK, path.size() - 2); i++)
         // {

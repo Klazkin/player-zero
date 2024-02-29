@@ -83,7 +83,19 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Su
 
 void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface)
 {
-    while (true)
+    if (surface->turn_get_current_unit() != caster)
+    {
+        UtilityFunctions::printerr("Not current units turn.");
+        return;
+    }
+
+    if (caster->is_dead())
+    {
+        UtilityFunctions::printerr("Caster dead at the start of random cast.");
+        return;
+    }
+
+    while (!caster->is_dead()) // if caster kill himself after cast, cant continue to cast
     {
         std::vector<CastInfo> candidate_casts;
         for (auto action : caster->get_hand_set())
@@ -95,7 +107,7 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
         if (candidate_casts.size() == 0)
         {
             Action::_cast_action({END_TURN, surface, caster, Vector2i()});
-            return;
+            break;
         }
 
         int cast_pt = UtilityFunctions::randi_range(0, candidate_casts.size() - 1);
@@ -105,13 +117,15 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
             UtilityFunctions::printerr("Uncastable action generated in random actor");
             UtilityFunctions::printerr(random_cast.action);
             UtilityFunctions::printerr(random_cast.target);
+
+            std::cout << caster.is_null() << caster->is_dead() << (caster == surface->turn_get_current_unit()) << "\n";
             continue;
         }
 
         Action::_cast_action(random_cast);
         if (random_cast.action == END_TURN)
         {
-            return;
+            break;
         }
     }
 }
@@ -230,6 +244,17 @@ public:
         }
 
         Ref<Unit> next_caster = node->surface->turn_get_current_unit(); // should never be a dead unit!!!
+
+        if (next_caster.is_null() || !next_caster.is_valid())
+        {
+            std::cout << "Next clone is not valid or null" << next_caster.is_null() << next_caster.is_valid() << "\n";
+            return node;
+        }
+
+        if (next_caster->is_dead())
+        {
+            std::cout << "Next clone is dead. ";
+            return node;
         }
 
         for (auto action : next_caster->get_hand_set())
@@ -295,6 +320,12 @@ public:
             Ref<Unit> current_unit = rollout_surface->turn_get_current_unit();
             if (current_unit == nullptr) // case if no units left on surface
             {
+                break;
+            }
+
+            if (current_unit->is_dead()) // case if no units left on surface
+            {
+                std::cout << "Critical: dead unit in rollout\n";
                 break;
             }
 
@@ -374,7 +405,7 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     mcts.run();
 
     Node *node = root;
-    mcts.draw_tree(node, 10);
+    // mcts.draw_tree(node, 5);
     while (!node->is_leaf())
     {
         float best_score = -std::numeric_limits<float>::infinity();

@@ -18,4 +18,10 @@ void SurfaceKillSubscriber::on_death()
     {
         surface->lift_element(element->get_position());
     }
+
+    if ((*surface->turn_get_current_unit()) == element)
+    {
+        surface->end_current_units_turn();
+        std::cout;
+    }
 }
