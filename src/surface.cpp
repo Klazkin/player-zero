@@ -370,7 +370,12 @@ Faction Surface::get_winner() const
 
     for (auto u : get_only_units_vec())
     {
-        if (ret == UNDEFINED)
+        if (u->is_dead()) // TODO add improved dead unit clean up..
+        {
+            continue;
+        }
+
+        if (ret == UNDEFINED) // first iteration
         {
             ret = u->get_faction();
             continue;

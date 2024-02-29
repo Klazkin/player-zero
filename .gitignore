@@ -1,7 +1,9 @@
 src/*.obj
 src/*.exe
+model/saved_model/
 .sconsign.dblite
 .vscode
 .idea
+*.data
 thirdparty/*
 *compile_commands.json

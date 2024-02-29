@@ -468,6 +468,14 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
         Vector2i tread_target = path[std::max(1LL, path.size() - MAX_WALK)];
         ret.push_back({initial_info.action, initial_info.surface, initial_info.caster, tread_target});
 
+        if (!initial_info.surface->is_position_available(tread_target))
+        {
+            std::cout << "Generated invalid tread position \n"
+                      << "tread_target " << tread_target.x << " " << tread_target.y << "\n"
+                      << "unit  " << u->get_position().x << " " << u->get_position().y << "\n"
+                      << "caster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n"
+                      << "log over.\n";
+                }
         // // walk towards unit for distance between 1 and MAX_WALK distance
         // for (int i = 1; i <= std::min((long long)MAX_WALK, path.size() - 2); i++)
         // {

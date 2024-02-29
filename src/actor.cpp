@@ -88,7 +88,7 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
         std::vector<CastInfo> candidate_casts;
         for (auto action : caster->get_hand_set())
         {
-            std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface, caster, Vector2i(0, 0)});
+            std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface, caster, Vector2i()});
             candidate_casts.insert(candidate_casts.end(), action_casts.begin(), action_casts.end());
         }
 
@@ -173,9 +173,15 @@ public:
             return std::numeric_limits<float>::infinity();
         }
 
+        if (node->parent == nullptr)
+        {
+            return 0;
+        }
+
+        float score_multiplier = node->caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
         float exploit = node->score / node->visits;
         float explore = std::sqrt(2 * std::log(node->parent->visits) / node->visits);
-        return exploit + explore;
+        return (exploit * score_multiplier) + explore;
     }
 
     Node *select_leaf(Node *node)
@@ -218,38 +224,39 @@ public:
             return node;
         }
 
-        if (node->surface->get_remaining_factions_count() <= 1 || node->caster == nullptr) // node terminated
+        if (node->surface->get_remaining_factions_count() <= 1 || node->caster == nullptr) // terminal node
         {
-            return node; // score is added at rollout
+            return node;
         }
 
-        for (auto action : node->caster->get_hand_set())
+        Ref<Unit> next_caster = node->surface->turn_get_current_unit(); // should never be a dead unit!!!
+        }
+
+        for (auto action : next_caster->get_hand_set())
         {
-            for (auto action_cast : Action::generate_action_casts({action, node->surface, node->caster, Vector2i()}))
+            for (auto original_cast : Action::generate_action_casts({action, node->surface, next_caster, Vector2i()}))
             {
                 Ref<Surface> surface_clone = node->surface->clone(); // todo check how handling of REF to PTR conversion goes
-                Ref<Unit> caster_clone = as_unit_ptr(surface_clone->get_element(node->caster->get_position()));
+                Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
 
-                if (caster_clone.is_null() || !caster_clone.is_valid())
+                if (next_caster_clone.is_null() || !next_caster_clone.is_valid())
                 {
-                    std::cout << "Caster clone is not valid or null" << caster_clone.is_null() << caster_clone.is_valid() << "\n";
-                    std::cout << surface_clone->get_only_units_vec().size();
-                    std::cout << surface_clone->get_winner();
+                    std::cout << "Caster clone is not valid or null " << next_caster_clone.is_null() << next_caster_clone.is_valid() << "\n";
+                    std::cout << surface_clone->get_only_units_vec().size() << "\n";
+                    std::cout << surface_clone->get_winner() << "\n";
                 }
 
-                CastInfo ci = {
+                CastInfo clone_cast = {
                     action,
                     surface_clone,
-                    caster_clone,
-                    action_cast.target,
+                    next_caster_clone,
+                    original_cast.target,
                 };
 
-                if (Action::_is_castable(ci))
+                if (Action::_is_castable(clone_cast))
                 {
-                    Action::_cast_action(ci);
-
-                    Ref<Unit> new_caster = surface_clone->turn_get_current_unit();
-                    Node *newNode = new Node(action, surface_clone, new_caster, action_cast.target);
+                    Action::_cast_action(clone_cast);
+                    Node *newNode = new Node(action, surface_clone, next_caster_clone, clone_cast.target);
                     newNode->parent = node;
                     node->children.push_back(newNode);
                 }
@@ -283,7 +290,7 @@ public:
 
         Ref<Surface> rollout_surface = node->surface->clone();
         int rollout_turns = 0;
-        while (rollout_surface->get_remaining_factions_count() > 1 || rollout_turns++ < max_rollout_turns)
+        while (rollout_surface->get_remaining_factions_count() > 1 && rollout_turns++ < max_rollout_turns)
         {
             Ref<Unit> current_unit = rollout_surface->turn_get_current_unit();
             if (current_unit == nullptr) // case if no units left on surface
@@ -293,6 +300,7 @@ public:
 
             Actor::perfrom_random_actions_for_turn(current_unit, rollout_surface); // todo research other rollout directors
         }
+
         return eval_surface_score(root->caster->get_faction(), rollout_surface);
     }
 
@@ -322,9 +330,9 @@ public:
         std::cout << "mcts run finished in " << duration.count() << "ms \n";
     }
 
-    void draw_tree(Node *node)
+    void draw_tree(Node *node, int depth)
     {
-        if (!node->is_leaf())
+        if (!node->is_leaf() && depth > 0)
         {
             std::cout << "(";
             bool is_first = true;
@@ -334,7 +342,7 @@ public:
                 {
                     std::cout << ",";
                 }
-                draw_tree(child);
+                draw_tree(child, depth - 1);
                 is_first = false;
             }
             std::cout << ")";
@@ -366,7 +374,7 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     mcts.run();
 
     Node *node = root;
-    mcts.draw_tree(node);
+    mcts.draw_tree(node, 10);
     while (!node->is_leaf())
     {
         float best_score = -std::numeric_limits<float>::infinity();
