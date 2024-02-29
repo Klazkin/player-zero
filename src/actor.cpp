@@ -321,6 +321,39 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
         std::cout << "mcts run finished in " << duration.count() << "ms \n";
     }
+
+    void draw_tree(Node *node)
+    {
+        if (!node->is_leaf())
+        {
+            std::cout << "(";
+            bool is_first = true;
+            for (auto child : node->children)
+            {
+                if (!is_first)
+                {
+                    std::cout << ",";
+                }
+                draw_tree(child);
+                is_first = false;
+            }
+            std::cout << ")";
+        }
+
+        std::cout << node->action << "/"
+                  << node->target.x << "/"
+                  << node->target.y << "/"
+                  << node->visits << "/"
+                  << node->score << "/"
+                  << ucb(node) << "/"
+                  << (node->caster == nullptr
+                          ? UNDEFINED
+                          : node->caster->get_faction());
+        if (node->parent == nullptr) // is root.
+        {
+            std::cout << ";\n";
+        }
+    }
 };
 
 Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns)
@@ -333,6 +366,7 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     mcts.run();
 
     Node *node = root;
+    mcts.draw_tree(node);
     while (!node->is_leaf())
     {
         float best_score = -std::numeric_limits<float>::infinity();
@@ -345,12 +379,6 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
                 best_score = child_score;
                 best_child = child;
             }
-        }
-
-        std::cout << "ACTION(" << best_child->action << ") VALS:\n ";
-        for (auto child : node->children)
-        {
-            std::cout << " " << child->action << " " << child->target.x << "," << child->target.y << " " << child->visits << " " << child->score << " " << mcts.ucb(child) << '\n';
         }
 
         CastInfo ci = {best_child->action, surface, caster, best_child->target};
