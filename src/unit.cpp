@@ -140,12 +140,12 @@ int Unit::get_speed() const
     return base_speed + stat_modifiers.speed;
 }
 
-void godot::Unit::set_faction(const Faction p_faction)
+void Unit::set_faction(const Faction p_faction)
 {
     faction = p_faction;
 }
 
-Faction godot::Unit::get_faction() const
+Faction Unit::get_faction() const
 {
     return faction;
 }

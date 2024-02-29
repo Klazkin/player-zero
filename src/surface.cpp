@@ -25,7 +25,7 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("turn_get_order"), &Surface::turn_get_order);
     ClassDB::bind_method(D_METHOD("turn_get_current_unit"), &Surface::turn_get_current_unit);
     ClassDB::bind_method(D_METHOD("generate_new_unit_order"), &Surface::generate_new_unit_order);
-    // ClassDB::bind_method(D_METHOD("turn_next"), &Surface::turn_next);
+    ClassDB::bind_method(D_METHOD("get_size"), &Surface::get_size);
 
     ADD_SIGNAL(MethodInfo("turn_started", PropertyInfo(Variant::OBJECT, "unit")));
     ADD_SIGNAL(MethodInfo("turn_ended", PropertyInfo(Variant::OBJECT, "unit")));
@@ -217,16 +217,18 @@ Vector2i Surface::get_ray_collision(const Vector2i ray_start, const Vector2i ray
 
 bool Surface::is_position_available(const Vector2i &p_pos) const
 {
-    return element_positions.count(p_pos) == 0;
+    return (element_positions.count(p_pos) == 0) && is_within(p_pos);
 }
 
 void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element)
 {
-    if (!p_element.is_valid() ||
+    if (!is_within(p_pos) ||
+        !p_element.is_valid() ||
         p_element->get_is_on_surface() ||
         !is_position_available(p_pos))
     {
         UtilityFunctions::print("Did not place");
+        UtilityFunctions::print(!is_within(p_pos));
         UtilityFunctions::print(!p_element.is_valid());
         UtilityFunctions::print(p_element.is_null());
         UtilityFunctions::print(p_element->get_is_on_surface());
@@ -250,6 +252,11 @@ bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to)
     element_positions.erase(p_pos_from);
     element_positions[p_pos_to] = element;
     return true;
+}
+
+bool Surface::is_within(const Vector2i p_pos) const
+{
+    return (0 <= p_pos.x) && (p_pos.x < SIZE) && (0 <= p_pos.y) && (p_pos.y < SIZE);
 }
 
 Ref<SurfaceElement> Surface::get_element(const Vector2i &p_pos) const
@@ -352,7 +359,7 @@ void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caste
     emit_signal("action_cast", action, caster, target);
 }
 
-std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> godot::Surface::get_element_positions() const
+std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> Surface::get_element_positions() const
 {
     return element_positions;
 }
@@ -391,6 +398,11 @@ int Surface::get_remaining_factions_count() const
         factions.insert(u->get_faction());
     }
     return factions.size();
+}
+
+int Surface::get_size() const
+{
+    return SIZE;
 }
 
 TypedArray<Unit> Surface::turn_get_order() const
