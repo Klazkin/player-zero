@@ -101,6 +101,11 @@ CastInfo Action::get_combination_cast(Ref<Surface> surface, Ref<SurfaceElement> 
 
 std::vector<CastInfo> Action::generate_action_casts(const CastInfo &initial_info)
 {
+    if (!is_action_registered(initial_info.action))
+    {
+        return std::vector<CastInfo>();
+    }
+
     return function_registry[initial_info.action].gen_func(initial_info);
 }
 
