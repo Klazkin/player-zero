@@ -28,6 +28,7 @@ namespace godot
         std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> element_positions;
         std::vector<Ref<Unit>> unit_order;
         int unit_order_counter = 0;
+        const int SIZE = 12;
 
     protected:
         static void _bind_methods();
@@ -44,6 +45,7 @@ namespace godot
         bool is_position_available(const Vector2i &p_pos) const; // TODO is there any point to pass Vector2i as ref?
         void place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_element);
         bool move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to);
+        bool is_within(const Vector2i p_pos) const;
 
         Ref<SurfaceElement> get_element(const Vector2i &p_pos) const;
         Ref<SurfaceElement> lift_element(const Vector2i &p_pos);
@@ -61,6 +63,7 @@ namespace godot
         std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> get_element_positions() const;
         Faction get_winner() const;
         int get_remaining_factions_count() const;
+        int get_size() const;
     };
 
 }
