@@ -405,7 +405,7 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     mcts.run();
 
     Node *node = root;
-    // mcts.draw_tree(node, 5);
+    mcts.draw_tree(node, 7);
     while (!node->is_leaf())
     {
         float best_score = -std::numeric_limits<float>::infinity();

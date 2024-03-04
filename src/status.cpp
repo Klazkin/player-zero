@@ -50,7 +50,8 @@ void BurnStatus::clone_to(CloneContext &clone_context) const
 
 void BurnStatus::on_turn_start()
 {
-    target_ptr->hit(5);
+    target_ptr->get_stat_modifiers().defence -= 1;
+    target_ptr->hit(1);
     Status::on_turn_start();
 }
 
@@ -132,15 +133,6 @@ ShaclesChild::~ShaclesChild()
 
 void ShaclesChild::clone_to(CloneContext &clone_context) const
 {
-    // if (*link_counter == 2) // Linking is handled by parent.
-    // {
-    //     return;
-    // }
-
-    // for broken links ignore.
-    // Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
-    // UnitSubscriber *clone = new Status(STATUS_SHACLES, target_ptr, duration);
-    // cloned_owner->add_subscriber(clone);
 }
 
 Dusted::Dusted(Unit *p_target_ptr, const int p_duration) : Status(STATUS_DUSTED, p_target_ptr, p_duration) {}
@@ -155,4 +147,77 @@ void Dusted::on_turn_start()
 {
     StatModifiers &sm = target_ptr->get_stat_modifiers();
     sm.speed -= 2;
+    Status::on_turn_start();
 }
+
+Spiriting::Spiriting(Unit *p_target_ptr, const int p_duration) : Status(STATUS_SPIRITING, p_target_ptr, p_duration) {}
+
+void Spiriting::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new Spiriting(cloned_owner, duration));
+};
+
+void Spiriting::on_turn_start()
+{
+    target_ptr->heal(2);
+    Status::on_turn_start();
+};
+
+Immolation::Immolation(const int p_borrowed_hp, Unit *p_target_ptr, const int p_duration) : Status(STATUS_SPIRITING, p_target_ptr, p_duration)
+{
+    borrowed_hp = p_borrowed_hp;
+}
+
+void Immolation::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new Immolation(borrowed_hp, cloned_owner, duration));
+};
+
+void Immolation::on_turn_start()
+{
+    StatModifiers &sm = target_ptr->get_stat_modifiers();
+    sm.speed += 1;
+    sm.damage += 4;
+    sm.defence -= 1;
+
+    if (get_duration() == 1)
+        target_ptr->heal(borrowed_hp);
+
+    Status::on_turn_start();
+};
+
+CoreArmor::CoreArmor(Unit *p_target_ptr, const int p_duration) : Status(STATUS_CORE_ARMOR, p_target_ptr, p_duration) {}
+void CoreArmor::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new CoreArmor(cloned_owner, duration));
+};
+
+void CoreArmor::on_turn_start()
+{
+    StatModifiers &sm = target_ptr->get_stat_modifiers();
+    sm.speed -= 1;
+    sm.armored = true;
+
+    Status::on_turn_start();
+};
+
+void CoreArmor::on_hit(int damage)
+{
+    target_ptr->remove_subscriber(get_id());
+};
+
+HoarfrostArmor::HoarfrostArmor(Unit *p_target_ptr, const int p_duration) : Status(STATUS_HOARFROST_ARMOR, p_target_ptr, p_duration) {}
+void HoarfrostArmor::clone_to(CloneContext &clone_context) const
+{
+    Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
+    cloned_owner->add_subscriber(new HoarfrostArmor(cloned_owner, duration));
+};
+
+void HoarfrostArmor::on_turn_start()
+{
+    target_ptr->get_stat_modifiers().defence += 2;
+    Status::on_turn_start();
+};

@@ -1,11 +1,10 @@
 from ete3 import Tree, TreeStyle, TextFace, AttrFace, faces, TreeNode, RectFace, NodeStyle
 from ete3.treeview.faces import add_face_to_node
-import enum
 from enum import auto, Enum
 
-
-with open("data.graph", "r") as f:
+with open("graph.data", "r") as f:
     graph = f.read()
+
 
 class Action(Enum):
     END_TURN = -3
@@ -26,6 +25,16 @@ class Action(Enum):
     WISPSPARKS = auto()
     BONEDUST = auto()
     BONESPARKS = auto()
+    RESPIRIT = auto()
+    SNOWMOTES = auto()
+    SUNDIVE = auto()
+    METEORSHATTER = auto()
+    ARMORCORE = auto()
+    IMMOLATION = auto()
+    ICEPOLE = auto()
+    OBLIVION = auto()
+    HOARFROST = auto()
+    RAPID_GROWTH = auto()
 
 
 action_name_dict = {
@@ -41,24 +50,45 @@ action_name_dict = {
     Action.ETERNALSHACLES: "Shacles",
     Action.ALTAR: "Altar",
     Action.NETHERSWAP: "Netherswap",
-    Action.LOS_ACTION: "action LOS",
+    Action.LOS_ACTION: "Action LOS",
     Action.BONEDUST: "Bonedust",
     Action.WISPSPARKS: "Wispsparks",
     Action.BONESPARKS: "Bonesparks",
     Action.DEBUG_KILL: "Insta Kill",
-    Action.DETONATION: "Explode"
+    Action.DETONATION: "Explode",
+    Action.RESPIRIT: "Respirit",
+    Action.SNOWMOTES: "Snowmotes",
+    Action.SUNDIVE: "Sundive",
+    Action.METEORSHATTER: "Meteor",
+    Action.ARMORCORE: "Armorcore",
+    Action.IMMOLATION: "Immolation",
+    Action.ICEPOLE: "Icepole",
+    Action.OBLIVION: "Oblivion",
+    Action.HOARFROST: "Hoarfrost",
+    Action.RAPID_GROWTH: "Rapid Growth"
 }
 
 HORIZONTAL_STYLE = False
 
 
-def layout(node: TreeNode, max_depth=10):
+def layout(node: TreeNode, max_depth=5):
     node_depth = len(node.get_ancestors())
+    node.img_style["fgcolor"] = "0"
+    node.img_style["shape"] = "sphere"
+
     if node_depth > max_depth:
+        for child in node.get_children():
+            child.detach()
+
         return
 
     action_id, target_x, target_y, visits, score, ucb, faction = str.split(node.name, "/")
     action = Action(int(action_id))
+
+    def get_exploit(n_score: str, n_visits: str) -> float:
+        return round(float(n_score) / float(n_visits), 2) if float(n_visits) > 0 else 0
+
+    exploit = get_exploit(score, visits)
 
     def get_action_name(a: str):
         return action_name_dict.get(Action(int(a)), "Unknown")
@@ -74,35 +104,33 @@ def layout(node: TreeNode, max_depth=10):
     action_info = join_symbol.join([
         action_name,
         action_target,
-        f"V={visits} S={score} ucb={ucb}"
+        f"v={visits} e={exploit} ucb={ucb}"
     ])
 
     max_ucb_path = True
-    max_score_path = True
+    max_exploit_path = True
     max_visits_path = True
+
     for sis in node.get_sisters():
         _, _, _, sis_visits, sis_score, sis_ucb, _ = str.split(sis.name, "/")
         if float(sis_ucb) > float(ucb):
             max_ucb_path = False
 
-        if float(sis_score) > float(score):
-            max_score_path = False
+        if get_exploit(sis_score, sis_visits) > exploit:
+            max_exploit_path = False
 
         if float(sis_visits) > float(visits):
             max_visits_path = False
 
     max_ucb_path = node.is_root() or (max_ucb_path and node.get_ancestors()[0].max_ucb_path)
-    max_score_path = node.is_root() or (max_score_path and node.get_ancestors()[0].max_score_path)
+    max_exploit_path = node.is_root() or (max_exploit_path and node.get_ancestors()[0].max_exploit_path)
     max_visits_path = node.is_root() or (max_visits_path and node.get_ancestors()[0].max_visits_path)
 
     node.add_features(
         max_ucb_path=max_ucb_path,
-        max_score_path=max_score_path,
+        max_exploit_path=max_exploit_path,
         max_visits_path=max_visits_path
     )
-
-    node.img_style["fgcolor"] = "0"
-    node.img_style["shape"] = "sphere"
 
     primary_color, accent_color = {
         (False, False, False): ("#000000", "White"),  # Uncolored
@@ -113,7 +141,7 @@ def layout(node: TreeNode, max_depth=10):
         (True, False, True): ("#6a006a", "#ffafff"),  # Purple
         (True, True, False): ("#6a6a00", "#ffffaf"),  # Yellow
         (True, True, True): ("#303030", "#afafaf"),  # Gray (all)
-    }[max_ucb_path, max_score_path, max_visits_path]
+    }[max_ucb_path, max_exploit_path, max_visits_path]
 
     label_bg_color, label_fg_color = {
         -1: ("#006060", "#00ffff"),  # Undefined (Purple)

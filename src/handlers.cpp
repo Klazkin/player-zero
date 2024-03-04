@@ -105,13 +105,69 @@ void register_handlers()
         check_cell_free,
         cast_altar,
         gen_closest_free_cast);
+
+    Action::register_action(
+        RESPIRIT,
+        check_ally_unit_only,
+        cast_respirit,
+        gen_all_units_with_checker);
+
+    Action::register_action(
+        RAPID_GROWTH,
+        check_self_cast,
+        cast_rapid_growth,
+        gen_self_cast);
+
+    Action::register_action(
+        IMMOLATION,
+        check_ally_unit_only,
+        cast_immolation,
+        gen_all_units_with_checker);
+
+    Action::register_action(
+        ARMORCORE,
+        check_ally_unit_only,
+        cast_armorcore,
+        gen_all_units_with_checker);
+
+    Action::register_action(
+        SUNDIVE,
+        check_free_near_unit,
+        cast_sundive,
+        gen_free_near_every_unit);
+
+    Action::register_action(
+        BLOODDRAWING,
+        check_self_cast,
+        cast_blooddrawing,
+        gen_self_cast);
+
+    Action::register_action(
+        METEORSHATTER,
+        check_cell_taken,
+        cast_meteorshatter,
+        gen_all_elements_cast);
+
+    Action::register_action(
+        HOARFROST,
+        check_ally_unit_only,
+        cast_hoarfrost,
+        gen_all_units_with_checker);
 }
 
 void register_combinations()
 {
-    Action::register_combination(BLOODDRAWING, GROUNDRAISE, ALTAR);
-    Action::register_combination(TREAD, BLOODDRAWING, NETHERSWAP);
     Action::register_combination(BONEDUST, WISPSPARKS, BONESPARKS);
+
+    Action::register_combination(BLOODDRAWING, GROUNDRAISE, ALTAR);
+    Action::register_combination(BLOODDRAWING, RESPIRIT, ETERNALSHACLES);
+    Action::register_combination(BLOODDRAWING, TREAD, NETHERSWAP);
+    Action::register_combination(RESPIRIT, TREAD, RAPID_GROWTH);
+    Action::register_combination(WRATHSPARK, BLOODDRAWING, IMMOLATION);
+    Action::register_combination(RESPIRIT, GROUNDRAISE, ARMORCORE);
+    Action::register_combination(WRATHSPARK, TREAD, SUNDIVE);
+    Action::register_combination(WRATHSPARK, GROUNDRAISE, METEORSHATTER);
+    Action::register_combination(TREAD, GROUNDRAISE, HOARFROST);
 }
 
 bool check_always_allow(const CastInfo &cast)
@@ -132,6 +188,16 @@ bool check_cell_taken(const CastInfo &cast)
 bool check_unit_only(const CastInfo &cast)
 {
     return check_cell_taken(cast) && cast.surface->get_element(cast.target)->is_unit();
+}
+
+bool check_ally_unit_only(const CastInfo &cast)
+{
+    if (!cast.caster->is_unit()) // non-units cannot cast due to not having a faction
+    {
+        return false;
+    }
+    return check_unit_only(cast) &&
+           as_unit_ptr(cast.surface->get_element(cast.target))->get_faction() == as_unit_ptr(cast.caster)->get_faction();
 }
 
 bool check_self_cast(const CastInfo &cast)
@@ -169,6 +235,24 @@ bool check_action_combination(const CastInfo &cast)
     return Action::has_combination(action1, action2) && cast.caster->is_unit();
 }
 
+bool check_free_near_unit(const CastInfo &cast)
+{
+    if (!check_cell_free(cast))
+    {
+        return false;
+    }
+
+    for (auto v : {Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)})
+    {
+        if (check_unit_only({cast.action, cast.surface, cast.caster, cast.target + v}))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void cast_nothing(const CastInfo &cast)
 {
     UtilityFunctions::print("DEBUG CAST: " + String(cast.target));
@@ -177,12 +261,13 @@ void cast_nothing(const CastInfo &cast)
 void cast_wrathspark(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
-    target_element->hit(4);
+    target_element->hit(3);
 
     if (target_element->is_unit())
     {
         Unit *target_unit = as_unit_ptr(target_element);
-        target_unit->add_subscriber(new BurnStatus(target_unit, 5));
+        target_unit->add_subscriber(new BurnStatus(target_unit, 3));
+        target_unit->get_stat_modifiers().defence -= 1;
     }
 }
 
@@ -236,7 +321,7 @@ void cast_debug_kill(const CastInfo &cast)
 void cast_wispsparks(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
-    target_element->hit(2);
+    target_element->hit(3);
 }
 
 void cast_bonedust(const CastInfo &cast)
@@ -303,6 +388,98 @@ void cast_combine_actions(const CastInfo &cast)
 void cast_end_trun(const CastInfo &cast)
 {
     cast.surface->end_current_units_turn();
+}
+
+void cast_respirit(const CastInfo &cast)
+{
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    target_unit->add_subscriber(new Spiriting(target_unit, 4));
+}
+
+void cast_rapid_growth(const CastInfo &cast)
+{
+    if (cast.caster->is_unit()) // temp check for while caster can be non-unit...
+    {
+        as_unit_ptr(cast.caster)->heal(5);
+    }
+}
+
+void cast_immolation(const CastInfo &cast)
+{
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    int borrowed_hp = std::max(1, target_unit->get_health() / 2);
+
+    target_unit->hit(borrowed_hp);
+    target_unit->add_subscriber(new Immolation(borrowed_hp, target_unit, 4));
+    StatModifiers &sm = target_unit->get_stat_modifiers();
+
+    sm.speed += 1;
+    sm.damage += 4;
+    sm.defence -= 1;
+}
+
+void cast_armorcore(const CastInfo &cast)
+{
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    target_unit->add_subscriber(new CoreArmor(target_unit, 3));
+
+    StatModifiers &sm = target_unit->get_stat_modifiers();
+
+    sm.speed -= 1;
+    sm.armored = true;
+}
+
+void cast_sundive(const CastInfo &cast)
+{
+    cast.surface->lift_element(cast.caster->get_position());
+    cast.surface->place_element(cast.target, cast.caster);
+
+    for (auto v : {Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)})
+    {
+        CastInfo ci = {cast.action,
+                       cast.surface,
+                       cast.caster,
+                       cast.target + v};
+
+        if (check_cell_taken(ci))
+        {
+            cast_wrathspark(ci);
+        }
+    }
+}
+
+void cast_blooddrawing(const CastInfo &cast)
+{
+    cast.caster->hit(3);
+
+    if (cast.caster->is_unit())
+    {
+        as_unit_ptr(cast.caster)->add_to_hand(BLOODDRAWING);
+        as_unit_ptr(cast.caster)->refill_hand();
+        as_unit_ptr(cast.caster)->remove_from_hand(BLOODDRAWING);
+    }
+}
+
+void cast_meteorshatter(const CastInfo &cast)
+{
+    Ref<SurfaceElement> target = cast.surface->get_element(cast.target);
+    const int RADIUS = 3;
+    target->hit(5);
+
+    for (auto key_val_pair : cast.surface->get_element_positions())
+    {
+        if ((key_val_pair.first - cast.target).length_squared() <= RADIUS * RADIUS)
+        {
+            key_val_pair.second->hit(10);
+        }
+    }
+}
+
+void cast_hoarfrost(const CastInfo &cast)
+{
+    Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
+    target_unit->add_subscriber(new CoreArmor(target_unit, 3));
+    target_unit->get_stat_modifiers().defence += 2;
 }
 
 void multicaster(
@@ -475,7 +652,7 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
                       << "unit  " << u->get_position().x << " " << u->get_position().y << "\n"
                       << "caster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n"
                       << "log over.\n";
-                }
+        }
 
         // for (auto n : initial_info.surface->get_free_neighbors(initial_info.caster->get_position()))
         // {
@@ -518,4 +695,31 @@ std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info)
     }
 
     return ret;
+}
+
+std::vector<CastInfo> gen_free_near_every_unit(const CastInfo &initial_info)
+{
+    std::unordered_set<Vector2i, VectorHasher> candidates_set;
+
+    for (auto u : initial_info.surface->get_only_units_vec())
+    {
+        for (auto n : {Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)})
+        {
+            Vector2i target = u->get_position() + n;
+            if (initial_info.surface->is_position_available(target))
+            {
+                candidates_set.insert(target);
+            }
+        }
+    }
+
+    std::vector<CastInfo> candidates_vec;
+    candidates_vec.reserve(candidates_set.size());
+
+    for (auto v : candidates_set)
+    {
+        candidates_vec.push_back({initial_info.action, initial_info.surface, initial_info.caster, v});
+    }
+
+    return candidates_vec;
 }

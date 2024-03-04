@@ -42,6 +42,7 @@ void Unit::_bind_methods()
     ADD_SIGNAL(MethodInfo("subscriber_removed", PropertyInfo(Variant::INT, "subscriber")));
     ADD_SIGNAL(MethodInfo("action_added_to_hand", PropertyInfo(Variant::INT, "action")));
     ADD_SIGNAL(MethodInfo("action_removed_from_hand", PropertyInfo(Variant::INT, "action")));
+    ADD_SIGNAL(MethodInfo("healed", PropertyInfo(Variant::INT, "damage")));
 
     BIND_ENUM_CONSTANT(UNDEFINED);
     BIND_ENUM_CONSTANT(PLAYER);
@@ -87,6 +88,14 @@ void Unit::clone_subscribers_to(CloneContext &clone_context) const
 
 int Unit::hit(int damage)
 {
+    if (stat_modifiers.armored)
+    {
+        stat_modifiers.armored = false;
+        damage = 0;
+    }
+
+    damage = std::max(0, damage - stat_modifiers.defence);
+
     set_health(get_health() - damage);
     trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also? Implement damage instance struct..
     emit_signal("hurt", damage);
@@ -94,7 +103,19 @@ int Unit::hit(int damage)
     {
         trigger_death();
     }
+
     return 1; // TODO return damage change
+}
+
+int Unit::heal(int damage)
+{
+    if (is_dead())
+    {
+        return 0; // cannot heal dead unit
+    }
+    set_health(get_health() + damage);
+    emit_signal("healed", damage);
+    return 1; // TODO return heal change
 }
 
 void Unit::set_base_max_health(const int p_max_health)
@@ -115,7 +136,7 @@ int Unit::get_max_health() const
 
 void Unit::set_health(const int p_health)
 {
-    health = p_health;
+    health = std::clamp(p_health, 0, base_max_health);
     emit_signal("health_changed", p_health);
 }
 
@@ -199,10 +220,9 @@ void Unit::trigger_on_hit_subscribers(int damage)
     }
 }
 
-void godot::Unit::reset_stat_modifiers()
+void Unit::reset_stat_modifiers()
 {
-    stat_modifiers.speed = 0;
-    stat_modifiers.max_health = 0;
+    stat_modifiers = StatModifiers();
 }
 
 StatModifiers &Unit::get_stat_modifiers()

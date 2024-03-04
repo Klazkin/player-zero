@@ -241,7 +241,7 @@ void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_e
     element_positions[p_pos] = p_element;
 }
 
-bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to)
+bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to) // TODO IS DEPRIDACTED.
 {
     Ref<SurfaceElement> element = get_element(p_pos_from);
     if (element.is_null() || !is_position_available(p_pos_to))

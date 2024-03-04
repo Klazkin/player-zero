@@ -25,6 +25,10 @@ namespace godot
     {
         int speed = 0;
         int max_health = 0;
+        int damage = 0;
+        int defence = 0;
+        bool stunned = false;
+        bool armored = false;
     };
 
     class Unit : public SurfaceElement
@@ -51,6 +55,7 @@ namespace godot
         void clone_subscribers_to(CloneContext &clone_context) const;
 
         int hit(int damage) override;
+        int heal(int damage);
 
         void set_health(const int p_health);
         int get_health() const;

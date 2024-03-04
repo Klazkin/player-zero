@@ -81,4 +81,48 @@ public:
     void on_turn_start() override;
 };
 
+class Spiriting : public Status
+{
+
+public:
+    Spiriting(Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
+
+    void on_turn_start() override;
+};
+
+class Immolation : public Status
+{
+
+private:
+    int borrowed_hp = 0;
+
+public:
+    Immolation(const int p_borrowed_hp, Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
+
+    void on_turn_start() override;
+};
+
+class CoreArmor : public Status
+{
+
+public:
+    CoreArmor(Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
+
+    void on_turn_start() override;
+    void on_hit(int damage) override;
+};
+
+class HoarfrostArmor : public Status
+{
+
+public:
+    HoarfrostArmor(Unit *p_target_ptr, const int p_duration);
+    void clone_to(CloneContext &clone_context) const override;
+
+    void on_turn_start() override;
+};
+
 #endif
