@@ -1,14 +1,17 @@
 #include "actor.h"
 #include "action.h"
+#include "ortbinding.h"
 
 #include <algorithm>
 #include <chrono>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <iostream>
+#include <fstream>
 
 void Actor::_bind_methods()
 {
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "caster", "surface"), &Actor::get_actions_from_decision_tree);
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_mcts);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface", "iterations", "max_rollout_turns", "data_path"), &Actor::get_actions_from_mcts);
 }
 
 Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
@@ -111,6 +114,12 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
         }
 
         int cast_pt = UtilityFunctions::randi_range(0, candidate_casts.size() - 1);
+
+        if (cast_pt >= candidate_casts.size())
+        {
+            UtilityFunctions::printerr("Critical: Generated random int bigger than candidates list.");
+        }
+
         CastInfo random_cast = candidate_casts[cast_pt];
         if (!Action::_is_castable(random_cast))
         {
@@ -118,11 +127,11 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
             UtilityFunctions::printerr(random_cast.action);
             UtilityFunctions::printerr(random_cast.target);
 
-            std::cout << caster.is_null() << caster->is_dead() << (caster == surface->turn_get_current_unit()) << "\n";
+            std::cout << caster.is_null() << caster->is_dead() << (caster != surface->turn_get_current_unit()) << "\n";
             continue;
         }
-
         Action::_cast_action(random_cast);
+
         if (random_cast.action == END_TURN)
         {
             break;
@@ -393,9 +402,143 @@ public:
             std::cout << ";\n";
         }
     }
+
+    void serialize_tree(const String &data_path) // NOTE TO SELF, the generated output reflects the surface as the cast has already been performed!
+    {
+        ofstream data_file;
+        data_file.open(std::string(data_path.ascii()), std::ios::app);
+        Node *node = root;
+        const int vis_thresh = 2500;
+
+        while (node != nullptr)
+        {
+            Node *most_visted = nullptr;
+            int most_visits = -1;
+
+            for (auto n : node->children)
+            {
+                if (n->visits > most_visits)
+                {
+                    most_visits = n->visits;
+                    most_visted = n;
+                }
+
+                if (n->visits > vis_thresh)
+                {
+                    serialize_node(n, data_file);
+                }
+            }
+
+            node = most_visted;
+        };
+
+        data_file.close();
+    }
+
+    void serialize_node(Node *node, ofstream &to_file)
+    {
+
+        Vector2i cast_offset = (node->target - node->caster->get_position());
+        Ref<Unit> opponent = nullptr;
+        float score_multiplier = (node->caster->get_faction() == root->caster->get_faction()) ? 1.0 : -1.0; // invert score for enemy
+
+        for (auto u : node->surface->get_only_units_vec())
+        {
+            if (u == node->caster)
+            {
+                continue;
+            }
+
+            if (opponent == nullptr)
+            {
+                opponent = u;
+                continue;
+            }
+
+            std::cout << "NS: More than one oppponennt during serialization.\n";
+        }
+
+        if (opponent == nullptr)
+        {
+            std::cout << "NS: Zero opponents in serialization.\n";
+            return;
+        }
+
+        Vector2i opponent_offset = (node->target - opponent->get_position());
+
+        const auto action_pool = {
+            COMBINE_ACTIONS,
+            WRATHSPARK,
+            GROUNDRAISE,
+            BLOODDRAWING,
+            TREAD,
+            // COILBLADE,
+            ETERNALSHACLES,
+            // ALTAR,
+            NETHERSWAP,
+            WISPSPARKS,
+            BONEDUST,
+            BONESPARKS,
+            RESPIRIT,
+            // SNOWMOTES,
+            SUNDIVE,
+            METEORSHATTER,
+            ARMORCORE,
+            IMMOLATION,
+            // ICEPOLE,
+            // OBLIVION,
+            HOARFROST,
+            RAPID_GROWTH,
+        }; // 22
+
+        const auto status_pool = {
+            STATUS_BURN,
+            STATUS_SLOW,
+            STATUS_COUNTDOWN,
+            STATUS_SHACLES,
+            STATUS_DUSTED,
+            STATUS_SPIRITING,
+            STATUS_IMMOLATION,
+            STATUS_CORE_ARMOR,
+            STATUS_HOARFROST_ARMOR,
+        }; // 9
+
+        for (ActionIdentifier action : action_pool)
+            to_file << (node->action == action) << ',';
+
+        to_file
+            << cast_offset.x << ','
+            << cast_offset.y << ','
+            << node->caster->get_health() << ','
+            << node->caster->get_max_health() << ','
+            << node->caster->get_speed() << ',';
+
+        for (ActionIdentifier action : action_pool)
+            to_file << (node->caster->is_in_deck(action) ? 1 : 0) << ',';
+        for (ActionIdentifier action : action_pool)
+            to_file << (node->caster->is_in_hand(action) ? 1 : 0) << ',';
+        for (UnitSubscriberIdentifier action : status_pool)
+            to_file << (node->caster->get_subscriber_duration(action)) << ',';
+
+        to_file
+            << opponent_offset.x << ','
+            << opponent_offset.y << ','
+            << opponent->get_health() << ','
+            << opponent->get_max_health() << ','
+            << opponent->get_speed() << ',';
+
+        for (ActionIdentifier action : action_pool)
+            to_file << (opponent->is_in_deck(action) ? 1 : 0) << ',';
+        for (ActionIdentifier action : action_pool)
+            to_file << (opponent->is_in_hand(action) ? 1 : 0) << ',';
+        for (UnitSubscriberIdentifier action : status_pool)
+            to_file << (opponent->get_subscriber_duration(action)) << ',';
+
+        to_file << ((node->score * score_multiplier) / node->visits) << '\n'; // exploit
+    }
 };
 
-Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns)
+Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns, const String &data_path)
 {
     Ref<ActionBundle> ab = memnew(ActionBundle);
     Ref<Surface> surface_clone = surface->clone();
@@ -405,7 +548,8 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     mcts.run();
 
     Node *node = root;
-    mcts.draw_tree(node, 7);
+    // mcts.draw_tree(node, 7);
+    // mcts.serialize_tree(node);
     while (!node->is_leaf())
     {
         float best_score = -std::numeric_limits<float>::infinity();
@@ -429,6 +573,13 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
             break;
         }
     }
+
+    if (node->is_leaf())
+    { // Due to a bug where MCTS tree stops generating after a victory, it does not add END_TURN action cast after winning.
+        ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
+    }
+
+    mcts.serialize_tree(data_path);
 
     delete root;
     return ab;

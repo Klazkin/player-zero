@@ -88,6 +88,14 @@ void Unit::clone_subscribers_to(CloneContext &clone_context) const
 
 int Unit::hit(int damage)
 {
+    return hit(damage, true);
+}
+
+int Unit::hit(int damage, bool trigger_on_hit)
+{
+    if (is_dead())
+        return 0; // todo same as bellow
+
     if (stat_modifiers.armored)
     {
         stat_modifiers.armored = false;
@@ -95,14 +103,15 @@ int Unit::hit(int damage)
     }
 
     damage = std::max(0, damage - stat_modifiers.defence);
-
     set_health(get_health() - damage);
-    trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also? Implement damage instance struct..
+
+    if (trigger_on_hit)
+        trigger_on_hit_subscribers(damage); // todo here it should be final applied damage also? Implement damage instance struct..
+
     emit_signal("hurt", damage);
+
     if (is_dead())
-    {
         trigger_death();
-    }
 
     return 1; // TODO return damage change
 }
@@ -113,6 +122,7 @@ int Unit::heal(int damage)
     {
         return 0; // cannot heal dead unit
     }
+
     set_health(get_health() + damage);
     emit_signal("healed", damage);
     return 1; // TODO return heal change
@@ -204,9 +214,18 @@ void Unit::remove_subscriber(UnitSubscriberIdentifier id)
     emit_signal("subscriber_removed", id);
 }
 
+int Unit::get_subscriber_duration(UnitSubscriberIdentifier id) const
+{
+    if (!has_subscriber(id))
+        return 0;
+
+    return subscribers.at(id)->get_duration();
+}
+
 void Unit::trigger_on_start_turn_subscribers()
 {
-    for (auto key_value_pair : subscribers)
+    auto copy = subscribers;
+    for (auto key_value_pair : copy) // todo linked lists?
     {
         key_value_pair.second->on_turn_start();
     }
@@ -214,9 +233,20 @@ void Unit::trigger_on_start_turn_subscribers()
 
 void Unit::trigger_on_hit_subscribers(int damage)
 {
-    for (auto key_value_pair : subscribers)
+    std::vector<UnitSubscriberIdentifier> ids;
+
+    for (auto key_value_pair : subscribers) // todo linked lists?
     {
-        key_value_pair.second->on_hit(damage);
+        // key_value_pair.second->on_hit(damage);
+        ids.push_back(key_value_pair.first);
+    }
+
+    for (auto id : ids) // due to turn ending in the middle of trigger on hit, some subsribers are removed and the copy now has invalid pointers
+    {
+        if (has_subscriber(id))
+        {
+            subscribers[id]->on_hit(damage);
+        }
     }
 }
 
@@ -236,6 +266,18 @@ TypedArray<int> Unit::get_subscriber_ids() const
     for (auto key_value_pair : subscribers)
     {
         arr.append(key_value_pair.second->get_id());
+    }
+
+    return arr;
+}
+
+std::vector<UnitSubscriberIdentifier> Unit::get_subscriber_ids_vec() const
+{
+    std::vector<UnitSubscriberIdentifier> arr;
+
+    for (auto key_value_pair : subscribers)
+    {
+        arr.push_back(key_value_pair.second->get_id());
     }
 
     return arr;
@@ -309,7 +351,7 @@ void godot::Unit::add_to_hand(const ActionIdentifier id)
     emit_signal("action_added_to_hand", id);
 }
 
-void Unit::refill_hand()
+void Unit::refill_hand() // TODO use shuffle instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
 {
     if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
     {
@@ -333,6 +375,6 @@ void Unit::refill_hand()
 
 Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)
 {
-    // todo maybe use Ref<Unit> = Ref<SurfaceElement> instead
+    // todo maybe use Ref<Unit> <== Ref<SurfaceElement> instead
     return Object::cast_to<Unit>(*element);
 }

@@ -17,7 +17,7 @@ protected:
 
 public:
     virtual void decrease_duration();
-    virtual int get_duration() const;
+    int get_duration() const override;
 
     void on_turn_start() override;
     void on_hit(int damage) override;
@@ -106,6 +106,9 @@ public:
 
 class CoreArmor : public Status
 {
+
+private:
+    bool is_active = true;
 
 public:
     CoreArmor(Unit *p_target_ptr, const int p_duration);

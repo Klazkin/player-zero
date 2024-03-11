@@ -26,6 +26,7 @@ void Surface::_bind_methods()
     ClassDB::bind_method(D_METHOD("turn_get_current_unit"), &Surface::turn_get_current_unit);
     ClassDB::bind_method(D_METHOD("generate_new_unit_order"), &Surface::generate_new_unit_order);
     ClassDB::bind_method(D_METHOD("get_size"), &Surface::get_size);
+    ClassDB::bind_method(D_METHOD("get_winner"), &Surface::get_winner);
 
     ADD_SIGNAL(MethodInfo("turn_started", PropertyInfo(Variant::OBJECT, "unit")));
     ADD_SIGNAL(MethodInfo("turn_ended", PropertyInfo(Variant::OBJECT, "unit")));
@@ -235,7 +236,7 @@ void Surface::place_element(const Vector2i &p_pos, const Ref<SurfaceElement> p_e
         UtilityFunctions::print(element_positions.count(p_pos) > 0);
         return;
     }
-    p_element->set_death_subscriber(new SurfaceKillSubscriber(this, *p_element)); // TODO causes movement to be slow
+    p_element->set_death_subscriber(new SurfaceKillSubscriber(this, *p_element)); // TODO causes movement to be slow (?)
     p_element->set_is_on_surface(true);
     p_element->set_position(p_pos);
     element_positions[p_pos] = p_element;
@@ -279,6 +280,10 @@ Ref<SurfaceElement> Surface::lift_element(const Vector2i &p_pos)
         element_positions.erase(p_pos);
         element->set_is_on_surface(false);
         // todo somehow remove from unit order if final lift.
+    }
+    else
+    {
+        std::cout << "lifitng invalid element\n";
     }
     return element;
 }

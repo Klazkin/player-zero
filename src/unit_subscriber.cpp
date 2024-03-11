@@ -30,3 +30,8 @@ void UnitSubscriber::on_turn_start()
 void UnitSubscriber::on_hit(int damage)
 {
 }
+
+int UnitSubscriber::get_duration() const
+{
+    return -1;
+}

@@ -72,6 +72,7 @@ void SurfaceElement::set_death_subscriber(UnitSubscriber *p_death_sub)
     {
         delete death_sub;
     }
+
     death_sub = p_death_sub;
 }
 

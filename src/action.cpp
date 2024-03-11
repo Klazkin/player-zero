@@ -72,6 +72,12 @@ bool Action::_is_castable(const CastInfo &cast_info)
         return false;
     }
 
+    if (cast_info.caster->is_unit() && as_unit_ptr(cast_info.caster)->is_dead())
+    {
+        std::cout << "attempted to cast while dead\n";
+        return false;
+    }
+
     return function_registry[cast_info.action].check_func(cast_info);
 }
 

@@ -17,7 +17,7 @@ protected:
 public:
     static void perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface);
     static Ref<ActionBundle> get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface);
-    static Ref<ActionBundle> get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns); // Monte Carlo tree search
+    static Ref<ActionBundle> get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns, const String &data_path);
 };
 
 #endif

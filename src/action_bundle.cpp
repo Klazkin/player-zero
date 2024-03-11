@@ -27,6 +27,11 @@ bool ActionBundle::cast_until_finished()
     if (Action::_is_castable(ci))
     {
         Action::_cast_action(ci);
+        if (ci.caster->is_dead()) // case when sudoku after casting action
+        {
+            cast_counter = casts.size();
+            return true;
+        }
 
         if (ci.action != END_TURN && cast_counter == casts.size())
         {
@@ -35,9 +40,49 @@ bool ActionBundle::cast_until_finished()
     }
     else
     {
-        UtilityFunctions::printerr("Did not pass cast check");
+        UtilityFunctions::printerr("CRITICAL: Did not pass cast check");
+        for (auto cj : casts)
+        {
+            std::cout << '\t' << cj.action << "\n";
+        }
+
         UtilityFunctions::printerr(ci.action);
+        UtilityFunctions::printerr(ci.caster->get_position());
         UtilityFunctions::printerr(ci.target);
+
+        if (!as_unit_ptr(ci.caster)->is_in_hand(ci.action))
+        {
+            UtilityFunctions::printerr("Action not found in hand.");
+        }
+
+        if (ci.surface->get_winner() != UNDEFINED)
+        {
+            UtilityFunctions::printerr("Surface has a winner.");
+        }
+
+        if (ci.caster->is_dead())
+        {
+            UtilityFunctions::printerr("Caster is dead.");
+        }
+
+        if (ci.surface->turn_get_current_unit() != ci.caster)
+        {
+            UtilityFunctions::printerr("Caster is not current turn unit.");
+        }
+
+        int end_turn_c = 0;
+        for (auto c : casts)
+        {
+            if (c.action == END_TURN)
+                end_turn_c++;
+        }
+
+        if (end_turn_c > 1)
+        {
+            UtilityFunctions::printerr("More than 1 END_TURN cast.");
+        }
+
+        // Action::_cast_action({END_TURN, ci.surface, ci.caster, Vector2i()});
     }
 
     return cast_counter >= casts.size();

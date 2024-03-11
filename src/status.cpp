@@ -104,7 +104,6 @@ void ShaclesParent::clone_to(CloneContext &clone_context) const
     }
 
     int *counter_clone = new int(2);
-
     caster_clone->add_subscriber(new ShaclesParent(counter_clone, caster_clone, target_clone, duration));
     target_clone->add_subscriber(new ShaclesChild(counter_clone, target_clone, duration));
 }
@@ -113,7 +112,8 @@ void ShaclesParent::on_hit(int damage)
 {
     if (*link_counter == 2)
     {
-        shacle_target_ptr->hit(damage); // damage transfer
+        shacle_target_ptr->hit(damage, false); // damage transfer (Without triggering other on_hits..)
+        // Above is "false" so that if two units are shacled twice in both directions we do not create an infinite loop.
     }
 }
 
@@ -164,7 +164,7 @@ void Spiriting::on_turn_start()
     Status::on_turn_start();
 };
 
-Immolation::Immolation(const int p_borrowed_hp, Unit *p_target_ptr, const int p_duration) : Status(STATUS_SPIRITING, p_target_ptr, p_duration)
+Immolation::Immolation(const int p_borrowed_hp, Unit *p_target_ptr, const int p_duration) : Status(STATUS_IMMOLATION, p_target_ptr, p_duration)
 {
     borrowed_hp = p_borrowed_hp;
 }
@@ -192,21 +192,26 @@ CoreArmor::CoreArmor(Unit *p_target_ptr, const int p_duration) : Status(STATUS_C
 void CoreArmor::clone_to(CloneContext &clone_context) const
 {
     Unit *cloned_owner = as_unit_ptr(clone_context[target_ptr]);
-    cloned_owner->add_subscriber(new CoreArmor(cloned_owner, duration));
+    auto copy = new CoreArmor(cloned_owner, duration);
+    copy->is_active = is_active;
+    cloned_owner->add_subscriber(copy);
 };
 
 void CoreArmor::on_turn_start()
 {
-    StatModifiers &sm = target_ptr->get_stat_modifiers();
-    sm.speed -= 1;
-    sm.armored = true;
+    if (is_active)
+    {
+        StatModifiers &sm = target_ptr->get_stat_modifiers();
+        sm.speed -= 1;
+        sm.armored = true;
+    }
 
     Status::on_turn_start();
 };
 
 void CoreArmor::on_hit(int damage)
 {
-    target_ptr->remove_subscriber(get_id());
+    is_active = false;
 };
 
 HoarfrostArmor::HoarfrostArmor(Unit *p_target_ptr, const int p_duration) : Status(STATUS_HOARFROST_ARMOR, p_target_ptr, p_duration) {}

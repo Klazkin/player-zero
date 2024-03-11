@@ -7,7 +7,7 @@ enum UnitSubscriberIdentifier
 {
     INVALID_SUB = -1,
     SURFACE_KILL,
-    AMROR,
+    AMROR, // depricated
     STATUS_BURN,
     STATUS_SLOW,
     STATUS_COUNTDOWN,
@@ -34,6 +34,7 @@ public:
     virtual void on_death();
     virtual void on_turn_start();
     virtual void on_hit(int damage);
+    virtual int get_duration() const;
 };
 
 #endif

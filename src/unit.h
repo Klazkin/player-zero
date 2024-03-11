@@ -55,6 +55,7 @@ namespace godot
         void clone_subscribers_to(CloneContext &clone_context) const;
 
         int hit(int damage) override;
+        int hit(int damage, bool trigger_on_hit);
         int heal(int damage);
 
         void set_health(const int p_health);
@@ -77,12 +78,14 @@ namespace godot
         void add_subscriber(UnitSubscriber *subscriber);
         bool has_subscriber(UnitSubscriberIdentifier id) const;
         void remove_subscriber(UnitSubscriberIdentifier id);
+        int get_subscriber_duration(UnitSubscriberIdentifier id) const;
         void trigger_on_start_turn_subscribers();
         void trigger_on_hit_subscribers(int damage);
 
         void reset_stat_modifiers();
         StatModifiers &get_stat_modifiers();
         TypedArray<int> get_subscriber_ids() const;
+        std::vector<UnitSubscriberIdentifier> get_subscriber_ids_vec() const;
 
         void set_deck(const TypedArray<int> &p_deck);
         TypedArray<int> get_deck() const;

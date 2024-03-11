@@ -40,7 +40,8 @@ void register_handlers()
 
     Action::register_action(
         NETHERSWAP,
-        check_cell_taken,
+        [](const CastInfo &c)
+        { return check_cell_taken(c) && check_not_self_cast(c); },
         cast_swap,
         gen_all_other_units_cast);
 
@@ -230,9 +231,20 @@ bool check_line_of_sight(const CastInfo &cast)
 
 bool check_action_combination(const CastInfo &cast)
 {
-    ActionIdentifier action1 = (ActionIdentifier)cast.target.x;
-    ActionIdentifier action2 = (ActionIdentifier)cast.target.y;
-    return Action::has_combination(action1, action2) && cast.caster->is_unit();
+    ActionIdentifier result = Action::get_combination(
+        (ActionIdentifier)cast.target.x,
+        (ActionIdentifier)cast.target.y);
+
+    if (result == INVALID_ACTION)
+        return false;
+
+    if (!cast.caster->is_unit())
+        return false;
+
+    if (as_unit_ptr(cast.caster)->is_in_hand(result))
+        return false;
+
+    return true;
 }
 
 bool check_free_near_unit(const CastInfo &cast)
@@ -262,7 +274,6 @@ void cast_wrathspark(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
     target_element->hit(3);
-
     if (target_element->is_unit())
     {
         Unit *target_unit = as_unit_ptr(target_element);
@@ -336,7 +347,7 @@ void cast_bonedust(const CastInfo &cast)
 
         if ((potential_target->get_position() - cast.caster->get_position()).length_squared() <= 4 * 4)
         {
-            potential_target->add_subscriber(new Dusted(*potential_target, 1));
+            potential_target->add_subscriber(new Dusted(*potential_target, 2));
             StatModifiers &sm = potential_target->get_stat_modifiers();
             sm.speed -= 2;
         }
@@ -373,13 +384,12 @@ void cast_combine_actions(const CastInfo &cast)
     ActionIdentifier action2 = (ActionIdentifier)cast.target.y;
     ActionIdentifier result = Action::get_combination(action1, action2);
 
-    if (result == INVALID_ACTION) // redundant check
+    if (result == INVALID_ACTION) // redundant check done already by check function
     {
         return;
     }
 
     Unit *ucaster = as_unit_ptr(cast.caster);
-
     ucaster->remove_from_hand(action1);
     ucaster->remove_from_hand(action2);
     ucaster->add_to_hand(result);
@@ -478,7 +488,7 @@ void cast_meteorshatter(const CastInfo &cast)
 void cast_hoarfrost(const CastInfo &cast)
 {
     Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
-    target_unit->add_subscriber(new CoreArmor(target_unit, 3));
+    target_unit->add_subscriber(new HoarfrostArmor(target_unit, 3));
     target_unit->get_stat_modifiers().defence += 2;
 }
 
@@ -648,10 +658,9 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
         if (!initial_info.surface->is_position_available(tread_target))
         {
             std::cout << "Generated invalid tread position \n"
-                      << "tread_target " << tread_target.x << " " << tread_target.y << "\n"
-                      << "unit  " << u->get_position().x << " " << u->get_position().y << "\n"
-                      << "caster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n"
-                      << "log over.\n";
+                      << "\ttread_target " << tread_target.x << " " << tread_target.y << "\n"
+                      << "\tunit  " << u->get_position().x << " " << u->get_position().y << "\n"
+                      << "\tcaster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n";
         }
 
         // for (auto n : initial_info.surface->get_free_neighbors(initial_info.caster->get_position()))
@@ -683,14 +692,17 @@ std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info)
         {
             ActionIdentifier action1 = *it1;
             ActionIdentifier action2 = *it2;
+            ActionIdentifier result = Action::get_combination(action1, action2);
 
-            if (Action::has_combination(action1, action2))
+            if (result == INVALID_ACTION || as_unit_ptr(initial_info.caster)->is_in_hand(result))
             {
-                ret.push_back({initial_info.action,
-                               initial_info.surface,
-                               initial_info.caster,
-                               Vector2i((int)action1, (int)action2)});
+                continue;
             }
+
+            ret.push_back({initial_info.action,
+                           initial_info.surface,
+                           initial_info.caster,
+                           Vector2i((int)action1, (int)action2)});
         }
     }
 

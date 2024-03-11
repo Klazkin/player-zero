@@ -4,6 +4,8 @@ model/saved_model/
 .sconsign.dblite
 .vscode
 .idea
+*.pdb
+*.onnx
 *.data
 thirdparty/*
 *compile_commands.json
