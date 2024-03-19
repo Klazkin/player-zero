@@ -1,0 +1,178 @@
+<mxfile host="app.diagrams.net" modified="2024-03-18T20:22:37.241Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0" etag="A5TzOn8BDjtl5Qjb950Y" version="24.0.7" type="github">
+  <diagram name="Page-1" id="lnZlUyS0TKIjf1gaNoH5">
+    <mxGraphModel dx="989" dy="539" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-2" value="&lt;div&gt;Input Layer [96]&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="260" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-3" value="Normalization Layer [96]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="260" y="280" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-10" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="Ugc_4f16ARCT4bsBvahr-3" target="Ugc_4f16ARCT4bsBvahr-15">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="310" as="sourcePoint" />
+            <mxPoint x="348.55999999999995" y="305.56000000000006" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="440" y="310" />
+              <mxPoint x="345" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-12" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="310" as="sourcePoint" />
+            <mxPoint x="530" y="320" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="530" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-13" value="Batch Normalization [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="380" width="75" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-14" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="360" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-15" value="Unit 1 Slice [1-48]" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="320" width="170" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-16" value="Unit 2 Slice [49-96]" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="320" width="170" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-17" value="ReLU [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="430" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-19" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="450" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-20" value="Batch Normalization [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="470" width="75" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-21" value="ReLU [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="520" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-22" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="540" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-23" value="Add [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="307.5" y="560" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-24" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="Ugc_4f16ARCT4bsBvahr-14" target="Ugc_4f16ARCT4bsBvahr-23">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480" y="570" as="sourcePoint" />
+            <mxPoint x="530" y="520" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="290" y="370" />
+              <mxPoint x="290" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-25" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="Ugc_4f16ARCT4bsBvahr-15" target="Ugc_4f16ARCT4bsBvahr-14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480" y="510" as="sourcePoint" />
+            <mxPoint x="530" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-29" value="Batch Normalization [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="380" width="75" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-30" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="360" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-31" value="ReLU [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="430" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-32" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="450" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-33" value="Batch Normalization [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="470" width="75" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-34" value="ReLU [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="520" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-35" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="540" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-36" value="Add [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="506.25" y="560" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-37" value="" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="Ugc_4f16ARCT4bsBvahr-30" target="Ugc_4f16ARCT4bsBvahr-36">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="678.75" y="570" as="sourcePoint" />
+            <mxPoint x="728.75" y="520" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="600" y="370" />
+              <mxPoint x="600" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-39" value="" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="385" y="469.43" as="sourcePoint" />
+            <mxPoint x="495" y="469.43" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-40" value="Shared Weights" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="Ugc_4f16ARCT4bsBvahr-39">
+          <mxGeometry x="0.02" y="-2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-41" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.552;exitY=1.129;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="Ugc_4f16ARCT4bsBvahr-16" target="Ugc_4f16ARCT4bsBvahr-30">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="530" as="sourcePoint" />
+            <mxPoint x="470" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-43" value="Concatenate [32]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="380" y="610" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-46" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="Ugc_4f16ARCT4bsBvahr-23" target="Ugc_4f16ARCT4bsBvahr-43">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="670" as="sourcePoint" />
+            <mxPoint x="460" y="620" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="345" y="590" />
+              <mxPoint x="440" y="590" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-56" value="" style="endArrow=none;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" target="Ugc_4f16ARCT4bsBvahr-36">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="590" as="sourcePoint" />
+            <mxPoint x="540" y="590" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="544" y="590" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-57" value="Dense FF [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="402.5" y="630" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-58" value="20% Dropout [16]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="402.5" y="650" width="75" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-59" value="Dense FF [2]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="421.25" y="690" width="37.5" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-61" value="ReLU [2]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="421.25" y="730" width="37.5" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-65" value="Adapted from dataset automatically" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="660" y="275" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-66" value="Represents game state, 48 per unit" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="660" y="240" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-67" value="Unit encoding components share weights." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="660" y="395" width="120" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="Ugc_4f16ARCT4bsBvahr-70" value="Outputs two classes, unit 1 wins and unit 2 wins. " style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="530" y="730" width="220" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
