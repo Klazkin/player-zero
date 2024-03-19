@@ -11,7 +11,7 @@ void register_handlers()
         END_TURN,
         check_always_allow,
         cast_end_trun,
-        gen_simple_cast);
+        gen_self_cast);
 
     Action::register_action(
         COMBINE_ACTIONS,
@@ -53,7 +53,7 @@ void register_handlers()
             multicaster(
                 c,
                 check_cell_taken,
-                cast_wrathspark,
+                cast_coilblade_singular,
                 {Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)});
         },
         gen_4direction_cast);
@@ -93,13 +93,13 @@ void register_handlers()
         BONEDUST,
         check_always_allow,
         cast_bonedust,
-        gen_simple_cast);
+        gen_self_cast);
 
     Action::register_action(
         BONESPARKS,
         check_always_allow,
         cast_bonesparks,
-        gen_simple_cast);
+        gen_self_cast);
 
     Action::register_action(
         ALTAR,
@@ -193,12 +193,8 @@ bool check_unit_only(const CastInfo &cast)
 
 bool check_ally_unit_only(const CastInfo &cast)
 {
-    if (!cast.caster->is_unit()) // non-units cannot cast due to not having a faction
-    {
-        return false;
-    }
     return check_unit_only(cast) &&
-           as_unit_ptr(cast.surface->get_element(cast.target))->get_faction() == as_unit_ptr(cast.caster)->get_faction();
+           as_unit_ptr(cast.surface->get_element(cast.target))->get_faction() == cast.caster->get_faction();
 }
 
 bool check_self_cast(const CastInfo &cast)
@@ -238,10 +234,7 @@ bool check_action_combination(const CastInfo &cast)
     if (result == INVALID_ACTION)
         return false;
 
-    if (!cast.caster->is_unit())
-        return false;
-
-    if (as_unit_ptr(cast.caster)->is_in_hand(result))
+    if (cast.caster->is_in_hand(result))
         return false;
 
     return true;
@@ -312,14 +305,13 @@ void cast_detonate(const CastInfo &cast)
 
 void cast_shacle(const CastInfo &cast)
 {
-    Unit *caster_unit = as_unit_ptr(cast.caster);
     Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
     int *link_counter = new int(2); // keeps track of number of connections between the links
 
-    ShaclesParent *parent = new ShaclesParent(link_counter, caster_unit, target_unit, 3);
+    ShaclesParent *parent = new ShaclesParent(link_counter, *cast.caster, target_unit, 3);
     ShaclesChild *child = new ShaclesChild(link_counter, target_unit, 3);
 
-    caster_unit->add_subscriber(parent);
+    cast.caster->add_subscriber(parent);
     target_unit->add_subscriber(child);
 }
 
@@ -340,7 +332,7 @@ void cast_bonedust(const CastInfo &cast)
     for (auto potential_target : cast.surface->get_only_units_vec())
     {
         // ignore alies
-        if (cast.caster->is_unit() && potential_target->get_faction() == as_unit_ptr(cast.caster)->get_faction())
+        if (potential_target->get_faction() == cast.caster->get_faction())
         {
             continue;
         }
@@ -359,7 +351,7 @@ void cast_bonesparks(const CastInfo &cast)
     for (auto potential_target : cast.surface->get_only_units_vec())
     {
         // ignore alies
-        if (cast.caster->is_unit() && potential_target->get_faction() == as_unit_ptr(cast.caster)->get_faction())
+        if (potential_target->get_faction() == cast.caster->get_faction())
         {
             continue;
         }
@@ -389,10 +381,9 @@ void cast_combine_actions(const CastInfo &cast)
         return;
     }
 
-    Unit *ucaster = as_unit_ptr(cast.caster);
-    ucaster->remove_from_hand(action1);
-    ucaster->remove_from_hand(action2);
-    ucaster->add_to_hand(result);
+    cast.caster->remove_from_hand(action1);
+    cast.caster->remove_from_hand(action2);
+    cast.caster->add_to_hand(result);
 }
 
 void cast_end_trun(const CastInfo &cast)
@@ -408,10 +399,7 @@ void cast_respirit(const CastInfo &cast)
 
 void cast_rapid_growth(const CastInfo &cast)
 {
-    if (cast.caster->is_unit()) // temp check for while caster can be non-unit...
-    {
-        as_unit_ptr(cast.caster)->heal(5);
-    }
+    cast.caster->heal(5);
 }
 
 void cast_immolation(const CastInfo &cast)
@@ -462,12 +450,9 @@ void cast_blooddrawing(const CastInfo &cast)
 {
     cast.caster->hit(3);
 
-    if (cast.caster->is_unit())
-    {
-        as_unit_ptr(cast.caster)->add_to_hand(BLOODDRAWING);
-        as_unit_ptr(cast.caster)->refill_hand();
-        as_unit_ptr(cast.caster)->remove_from_hand(BLOODDRAWING);
-    }
+    cast.caster->add_to_hand(BLOODDRAWING);
+    cast.caster->refill_hand();
+    cast.caster->remove_from_hand(BLOODDRAWING);
 }
 
 void cast_meteorshatter(const CastInfo &cast)
@@ -490,6 +475,11 @@ void cast_hoarfrost(const CastInfo &cast)
     Unit *target_unit = as_unit_ptr(cast.surface->get_element(cast.target));
     target_unit->add_subscriber(new HoarfrostArmor(target_unit, 3));
     target_unit->get_stat_modifiers().defence += 2;
+}
+
+void cast_coilblade_singular(const CastInfo &cast)
+{
+    cast.surface->get_element(cast.target)->hit(4 + cast.caster->get_stat_modifiers().damage);
 }
 
 void multicaster(
@@ -525,11 +515,6 @@ void multicaster(
         if (local_checker(loc_cast))
             local_caster(loc_cast);
     }
-}
-
-std::vector<CastInfo> gen_simple_cast(const CastInfo &initial_info)
-{
-    return std::vector<CastInfo>({initial_info});
 }
 
 std::vector<CastInfo> gen_self_cast(const CastInfo &initial_info)
@@ -684,7 +669,7 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
 std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info)
 {
     std::vector<CastInfo> ret;
-    std::unordered_set<ActionIdentifier> hand = as_unit_ptr(initial_info.caster)->get_hand_set();
+    std::unordered_set<ActionIdentifier> hand = initial_info.caster->get_hand_set();
 
     for (auto it1 = hand.begin(); it1 != hand.end(); ++it1)
     {
@@ -694,7 +679,7 @@ std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info)
             ActionIdentifier action2 = *it2;
             ActionIdentifier result = Action::get_combination(action1, action2);
 
-            if (result == INVALID_ACTION || as_unit_ptr(initial_info.caster)->is_in_hand(result))
+            if (result == INVALID_ACTION || initial_info.caster->is_in_hand(result))
             {
                 continue;
             }

@@ -20,10 +20,12 @@ extension_path = 'gaf6/bin/'
 env.Append(
     CPPPATH=[
         "src/",
-        'thirdparty/onnxruntime-win-x64-1.16.3/include/'
+        'thirdparty/onnxruntime-win-x64-gpu-1.17.1/include/'
+        #'thirdparty/onnxruntime-directml/build/native/include/'
     ],
     LIBPATH=[
-        'thirdparty/onnxruntime-win-x64-1.16.3/lib/'
+        #'/thirdparty/onnxruntime-directml/runtimes/win-x64/native/'
+        'thirdparty/onnxruntime-win-x64-gpu-1.17.1/lib/'
     ],
     LIBS=[
         'onnxruntime'

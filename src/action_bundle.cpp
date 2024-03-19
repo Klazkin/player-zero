@@ -33,7 +33,12 @@ bool ActionBundle::cast_until_finished()
             return true;
         }
 
-        if (ci.action != END_TURN && cast_counter == casts.size())
+        if (ci.action == END_TURN)
+        {
+            return true;
+        }
+
+        if (cast_counter == casts.size())
         {
             UtilityFunctions::printerr("LAST ACTION IN ACTION_BUNDLE WAS NOT END TURN!!");
         }

@@ -222,6 +222,11 @@ int Unit::get_subscriber_duration(UnitSubscriberIdentifier id) const
     return subscribers.at(id)->get_duration();
 }
 
+UnitSubscriber *Unit::get_subscriber(UnitSubscriberIdentifier id) // todo really really really bad
+{
+    return subscribers.at(id);
+}
+
 void Unit::trigger_on_start_turn_subscribers()
 {
     auto copy = subscribers;

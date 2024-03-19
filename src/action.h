@@ -22,7 +22,7 @@ struct CastInfo
 {
     ActionIdentifier action; // TODO try making const?
     Ref<Surface> surface;
-    Ref<SurfaceElement> caster;
+    Ref<Unit> caster;
     Vector2i target;
 };
 
@@ -75,13 +75,13 @@ public:
     static ActionCheckType get_action_checker(ActionIdentifier action);
 
     // gd extension functions
-    static bool is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target);
-    static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target);
+    static bool is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target);
+    static void cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target);
     static bool has_combination(const ActionIdentifier action1, const ActionIdentifier action2);
     static ActionIdentifier get_combination(const ActionIdentifier action1, const ActionIdentifier action2);
     static CastInfo get_combination_cast(
         Ref<Surface> surface,
-        Ref<SurfaceElement> caster,
+        Ref<Unit> caster,
         const ActionIdentifier action1,
         const ActionIdentifier action2);
 };

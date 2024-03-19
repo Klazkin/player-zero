@@ -38,7 +38,7 @@ void Surface::_bind_methods()
 
 Surface::Surface()
 {
-    std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> element_positions;
+    std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> element_positions; // todo check if these need to be redeclared here
     std::vector<Ref<Unit>> unit_order;
 }
 
@@ -320,7 +320,15 @@ std::vector<Ref<Unit>> Surface::get_only_units_vec() const // todo this is slow
 
 bool unit_speed_compare(Ref<Unit> u1, Ref<Unit> u2)
 {
-    return u1->get_speed() > u2->get_speed(); // TODO handle speed ties
+    int priority = u1->get_speed() - u2->get_speed(); // higher speed gets advantage
+
+    if (priority != 0)
+        return priority > 0;
+
+    // priority = u2->get_faction() - u1->get_faction(); // factions with lower enum get advantage
+    // TODO uncommment above for new synth data
+
+    return priority > 0;
 }
 
 void Surface::generate_new_unit_order()
@@ -330,7 +338,7 @@ void Surface::generate_new_unit_order()
 
     for (auto pair : element_positions)
     {
-        if (pair.second->is_unit() && !as_unit_ptr(pair.second)->is_dead())
+        if (pair.second->is_unit() && !as_unit_ptr(pair.second)->is_dead()) // todo once there is a unit array use it instead
         {
             unit_order.push_back(pair.second);
         }
@@ -360,7 +368,7 @@ void Surface::start_current_units_turn()
     cur_unit->refill_hand();
 }
 
-void Surface::emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target)
+void Surface::emit_action_cast(const int action, const Ref<Unit> caster, const Vector2i target)
 {
     emit_signal("action_cast", action, caster, target);
 }

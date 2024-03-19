@@ -67,12 +67,12 @@ bool Action::_is_castable(const CastInfo &cast_info)
         return false;
     }
 
-    if (cast_info.caster->is_unit() && !as_unit_ptr(cast_info.caster)->is_in_hand(cast_info.action))
+    if (cast_info.caster->is_unit() && !cast_info.caster->is_in_hand(cast_info.action))
     {
         return false;
     }
 
-    if (cast_info.caster->is_unit() && as_unit_ptr(cast_info.caster)->is_dead())
+    if (cast_info.caster->is_unit() && cast_info.caster->is_dead())
     {
         std::cout << "attempted to cast while dead\n";
         return false;
@@ -86,7 +86,7 @@ void Action::_cast_action(const CastInfo &cast_info)
     if (cast_info.caster->is_unit() && cast_info.action != COMBINE_ACTIONS && cast_info.action != END_TURN)
     // todo add logic for "infinite actions"
     {
-        as_unit_ptr(cast_info.caster)->remove_from_hand(cast_info.action);
+        cast_info.caster->remove_from_hand(cast_info.action);
     }
 
     function_registry[cast_info.action].cast_func(cast_info);
@@ -107,7 +107,7 @@ ActionIdentifier Action::get_combination(const ActionIdentifier action1, const A
     return INVALID_ACTION;
 }
 
-CastInfo Action::get_combination_cast(Ref<Surface> surface, Ref<SurfaceElement> caster, const ActionIdentifier action1, const ActionIdentifier action2)
+CastInfo Action::get_combination_cast(Ref<Surface> surface, Ref<Unit> caster, const ActionIdentifier action1, const ActionIdentifier action2)
 {
     return {COMBINE_ACTIONS, surface, caster, Vector2i((int)action1, (int)action2)};
 }
@@ -153,12 +153,12 @@ void Action::register_combination(ActionIdentifier action1, ActionIdentifier act
     combination_registry[CombinationKey(action1, action2)] = action_result;
 }
 
-bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target)
+bool Action::is_castable(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
 {
     return _is_castable({action, surface, caster, target});
 }
 
-void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<SurfaceElement> caster, const Vector2i &target)
+void Action::cast_action(const ActionIdentifier action, Ref<Surface> surface, Ref<Unit> caster, const Vector2i &target)
 {
     _cast_action({action, surface, caster, target});
 }

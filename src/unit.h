@@ -79,6 +79,7 @@ namespace godot
         bool has_subscriber(UnitSubscriberIdentifier id) const;
         void remove_subscriber(UnitSubscriberIdentifier id);
         int get_subscriber_duration(UnitSubscriberIdentifier id) const;
+        UnitSubscriber *get_subscriber(UnitSubscriberIdentifier id);
         void trigger_on_start_turn_subscribers();
         void trigger_on_hit_subscribers(int damage);
 

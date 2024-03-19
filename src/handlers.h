@@ -47,6 +47,7 @@ void cast_sundive(const CastInfo &cast);
 void cast_blooddrawing(const CastInfo &cast);
 void cast_meteorshatter(const CastInfo &cast);
 void cast_hoarfrost(const CastInfo &cast);
+void cast_coilblade_singular(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,
@@ -54,7 +55,6 @@ void multicaster(const CastInfo &cast,
                  const vector<Vector2i> &points,
                  bool is_rotatable = true);
 
-std::vector<CastInfo> gen_simple_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_self_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_closest_free_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_all_elements_cast(const CastInfo &initial_info);

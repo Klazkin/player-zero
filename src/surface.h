@@ -59,7 +59,7 @@ namespace godot
         Ref<Unit> turn_get_current_unit() const;
         void end_current_units_turn();
         void start_current_units_turn();
-        void emit_action_cast(const int action, const Ref<SurfaceElement> caster, const Vector2i target);
+        void emit_action_cast(const int action, const Ref<Unit> caster, const Vector2i target);
         std::unordered_map<Vector2i, Ref<SurfaceElement>, VectorHasher> get_element_positions() const;
         Faction get_winner() const;
         int get_remaining_factions_count() const;

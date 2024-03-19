@@ -116,6 +116,7 @@ public:
 
     void on_turn_start() override;
     void on_hit(int damage) override;
+    bool get_is_active() const;
 };
 
 class HoarfrostArmor : public Status

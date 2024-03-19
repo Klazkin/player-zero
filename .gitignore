@@ -1,6 +1,9 @@
 src/*.obj
 src/*.exe
 model/saved_model/
+model/dueler_model/
+model/winner_predictor_model/
+model/.ipynb_checkpoints
 .sconsign.dblite
 .vscode
 .idea

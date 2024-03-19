@@ -212,6 +212,10 @@ void CoreArmor::on_turn_start()
 void CoreArmor::on_hit(int damage)
 {
     is_active = false;
+}
+bool CoreArmor::get_is_active() const
+{
+    return is_active;
 };
 
 HoarfrostArmor::HoarfrostArmor(Unit *p_target_ptr, const int p_duration) : Status(STATUS_HOARFROST_ARMOR, p_target_ptr, p_duration) {}
