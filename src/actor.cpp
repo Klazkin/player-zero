@@ -1,7 +1,8 @@
 #include "actor.h"
 #include "action.h"
 #include "monte_carlo.h"
-#include "tree_action_bundle.h"
+#include "bundles/tree_action_bundle.h"
+#include "bundles/vector_action_bundle.h"
 
 #include <algorithm>
 #include <chrono>
@@ -22,7 +23,7 @@ void Actor::_bind_methods()
 
 Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
 {
-    Ref<ActionBundle> ab = memnew(ActionBundle);
+    Ref<VectorActionBundle> ab = memnew(VectorActionBundle);
 
     auto units = surface->get_only_units_vec();
     Ref<Unit> target = nullptr;
@@ -192,155 +193,23 @@ void write_vec_to_file(ofstream &to_file, const std::vector<float> &vec)
 
 Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns, const String &data_path)
 {
-    Ref<ActionBundle> ab = memnew(TreeActionBundle);
-
-    Ref<Surface> surface_clone = surface->clone();
-    surface_clone->set_random_events_enabled(false);
-    Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-    Node *root = new Node(surface_clone, caster_clone);
-    MonteCarloTreeSearch mcts(root, max_rollout_turns, ucb, perfrom_random_actions_for_turn);
+    Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
+    MonteCarloTreeSearch mcts(ab->get_root(), max_rollout_turns, ucb, perfrom_random_actions_for_turn);
     mcts.run(interations);
-
-    // simplify
-    ((TreeActionBundle *)*ab)->caster = caster;
-    ((TreeActionBundle *)*ab)->surface = surface;
-    ((TreeActionBundle *)*ab)->root = root;
-
-    ofstream data_file_stream;
-    Node *node = root;
-    draw_tree(node, 8, root->caster->get_faction());
-
-    // delete root; root ownership transfered to TreeActionBundle
+    draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
     return ab;
 }
 
 Ref<ActionBundle> Actor::get_actions_from_model(Ref<Unit> caster, Ref<Surface> surface)
 {
     Ref<ActionBundle> ab = memnew(ActionBundle);
-    Ref<Unit> opponent = nullptr;
-
-    for (auto u : surface->get_only_units_vec())
-    {
-        if (u == caster)
-        {
-            continue;
-        }
-
-        if (opponent == nullptr)
-        {
-            opponent = u;
-            continue;
-        }
-
-        std::cout << "AFM: More than one oppponennt during opponent search.\n";
-    }
-
-    // generate clones...
-    //
-    // generate cast_candidates
-    // turn surface into vector...
-    // apply normalization...
-    // fetch from model...
-
-    if (surface->turn_get_current_unit() != caster)
-    {
-        UtilityFunctions::printerr("AFM: Not current units turn.");
-        return ab;
-    }
-
-    if (caster->is_dead())
-    {
-        UtilityFunctions::printerr("AFM: Caster dead at the start of random cast.");
-        return ab;
-    }
-
-    Ref<Surface> surface_clone = surface->clone();
-    Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-
-    while (!caster_clone->is_dead()) // if caster kills themselves after cast, cant continue to cast
-    {
-        std::vector<CastInfo> candidate_casts;
-        for (auto action : caster_clone->get_hand_set())
-        {
-            std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface_clone, caster_clone, Vector2i()});
-            candidate_casts.insert(candidate_casts.end(), action_casts.begin(), action_casts.end());
-        }
-
-        float best_exploit = -1;
-        CastInfo best_cast = {END_TURN, surface_clone, caster_clone, Vector2i()};
-        // cast evaluation, get explot
-        for (auto candidate_cast : candidate_casts)
-        {
-            Ref<Surface> surface_clone_clone = surface_clone->clone();
-            Ref<Unit> caster_clone_clone = surface_clone_clone->get_element(caster_clone->get_position());
-
-            CastInfo candidate_cast_clone = {candidate_cast.action, surface_clone_clone, caster_clone_clone, candidate_cast.target};
-
-            // if (candidate_cast.action == END_TURN)
-            // {
-            //     continue;
-            // }
-
-            if (Action::_is_castable(candidate_cast_clone))
-            {
-                Action::_cast_action(candidate_cast_clone);
-            }
-            else
-            {
-                std::cout << "Uncastable action in AFM clone clone (2) candidates.\n";
-                continue;
-            }
-
-            // candidate cast should be cast on a clone surface, then the clone surfacae must be turned into vector.
-            std::vector<float> vec_cast = serialize_cast(candidate_cast_clone); // must be called after cast!
-
-            if (vec_cast.size() != 114)
-            {
-                std::cout << "Serialized candidate cast clone wrong size (" << vec_cast.size() << ").\n";
-                continue;
-            }
-
-            std::array<float, 114> arr;
-            std::copy_n(vec_cast.begin(), 114, arr.begin());
-
-            float exploit = ORTBinding::dueler_predict(arr); // use candidate_cast_clone
-
-            std::cout
-                << "Exploit for action " << candidate_cast_clone.action
-                << " at " << candidate_cast_clone.target.x << ";" << candidate_cast_clone.target.y
-                << " is " << exploit << "\n";
-
-            if (exploit > best_exploit)
-            {
-                best_exploit = exploit;
-                best_cast = candidate_cast;
-            }
-        }
-
-        if (!Action::_is_castable(best_cast))
-        {
-            std::cout << "Uncastable action in AFM clone (1) candidates.";
-            std::cout << best_cast.action;
-            std::cout << best_cast.target.x << " " << best_cast.target.y;
-            std::cout << caster_clone.is_null() << caster_clone->is_dead() << (caster_clone != surface_clone->turn_get_current_unit()) << "\n";
-            continue;
-        }
-
-        Action::_cast_action(best_cast);
-        ab->push_back_cast({best_cast.action, surface, caster, best_cast.target}); // push cast to original
-
-        if (best_cast.action == END_TURN)
-        {
-            break;
-        }
-    }
-
+    // Removed function ...
     return ab;
 }
 
 Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> surface)
 {
-    Ref<ActionBundle> ab = memnew(ActionBundle);
+    Ref<VectorActionBundle> ab = memnew(VectorActionBundle);
     Ref<Unit> opponent = nullptr;
 
     for (auto u : surface->get_only_units_vec())
@@ -418,45 +287,9 @@ Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> 
 
 Ref<ActionBundle> Actor::get_actions_from_wpmcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns)
 {
-    Ref<ActionBundle> ab = memnew(ActionBundle);
-    Ref<Surface> surface_clone = surface->clone();
-    surface_clone->set_random_events_enabled(false);
-    Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-    Node *root = new Node(surface_clone, caster_clone);
-    WinPredictorTreeSearch wpts(root, max_rollout_turns, ucb, perfrom_random_actions_for_turn);
+    Ref<TreeActionBundle> ab = memnew(TreeActionBundle(caster, surface));
+    WinPredictorTreeSearch wpts(ab->get_root(), max_rollout_turns, ucb, perfrom_random_actions_for_turn);
     wpts.run(interations);
-
-    Node *node = root;
-    // mcts.draw_tree(node, 10);
-    while (!node->is_leaf())
-    {
-        float best_score = -std::numeric_limits<float>::infinity();
-        Node *best_child = nullptr;
-        for (auto child : node->children)
-        {
-            float child_score = child->visits; // TODO try different scorings
-            if (child_score > best_score)
-            {
-                best_score = child_score;
-                best_child = child;
-            }
-        }
-
-        CastInfo ci = {best_child->get_action(), surface, caster, best_child->get_target()};
-        ab->push_back_cast(ci);
-        node = best_child;
-
-        if (node->get_action() == END_TURN)
-        {
-            break;
-        }
-    }
-
-    if (node->is_leaf())
-    { // Due to a bug where MCTS tree stops generating after a victory, it does not add END_TURN action cast after winning.
-        ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
-    }
-
-    delete root;
+    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
     return ab;
 }

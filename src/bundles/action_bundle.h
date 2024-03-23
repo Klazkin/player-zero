@@ -9,17 +9,16 @@ class ActionBundle : public RefCounted
     GDCLASS(ActionBundle, RefCounted);
 
 protected:
-    std::vector<CastInfo> casts;
-    int cast_counter = 0;
     static void _bind_methods();
 
 public:
-    ActionBundle();
-    ~ActionBundle();
+    ActionBundle(){};
+    ~ActionBundle(){};
 
-    virtual bool cast_until_finished();
-    std::vector<CastInfo> get_casts() const;
-    void push_back_cast(const CastInfo &cast);
+    virtual bool is_finished() const;
+    virtual void cast_next();
+
+    void warn_not_castable(const CastInfo &cast) const;
 };
 
 #endif

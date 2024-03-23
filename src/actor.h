@@ -3,7 +3,7 @@
 
 #include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/class_db.hpp>
-#include <action_bundle.h>
+#include "bundles/action_bundle.h"
 #include "ortbinding.h"
 
 using namespace godot;
