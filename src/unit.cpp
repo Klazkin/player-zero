@@ -350,10 +350,19 @@ void Unit::remove_from_hand(const ActionIdentifier id)
     emit_signal("action_removed_from_hand", id);
 }
 
-void godot::Unit::add_to_hand(const ActionIdentifier id)
+void Unit::add_to_hand(const ActionIdentifier id)
 {
     hand.insert(id);
     emit_signal("action_added_to_hand", id);
+}
+
+std::vector<ActionIdentifier> Unit::get_refill_candidates() const
+{
+    std::vector<ActionIdentifier> refill_candidates;
+    std::copy_if(deck.begin(), deck.end(), std::back_inserter(refill_candidates),
+                 [&](ActionIdentifier a)
+                 { return hand.find(a) == hand.end(); });
+    return refill_candidates;
 }
 
 void Unit::refill_hand() // TODO use shuffle bag instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
@@ -363,11 +372,7 @@ void Unit::refill_hand() // TODO use shuffle bag instead? https://docs.godotengi
         add_to_hand(ActionIdentifier::TREAD); // Free refill for tread
     }
 
-    std::vector<ActionIdentifier> refill_candidates;
-
-    std::copy_if(deck.begin(), deck.end(), std::back_inserter(refill_candidates),
-                 [&](ActionIdentifier a)
-                 { return hand.find(a) == hand.end(); });
+    std::vector<ActionIdentifier> refill_candidates = get_refill_candidates();
 
     if (refill_candidates.size() == 0)
     {
@@ -375,7 +380,17 @@ void Unit::refill_hand() // TODO use shuffle bag instead? https://docs.godotengi
     }
 
     int refill_i = UtilityFunctions::randi_range(0, refill_candidates.size() - 1);
-    add_to_hand(refill_candidates[refill_i]);
+    refill_hand(refill_candidates[refill_i]);
+}
+
+void Unit::refill_hand(ActionIdentifier refilled_action)
+{
+    if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
+    {
+        add_to_hand(ActionIdentifier::TREAD); // Free refill for tread
+    }
+
+    add_to_hand(refilled_action);
 }
 
 Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)

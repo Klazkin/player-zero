@@ -16,32 +16,45 @@ class Node
 public:
     int visits = 0;
     float score = 0;
-    Node *parent;
+    Node *parent = nullptr;
     std::vector<Node *> children;
-    // Cast information
-    const ActionIdentifier action;
     Ref<Surface> surface;
     Ref<Unit> caster;
-    const Vector2i target;
 
-    Node(
-        const ActionIdentifier p_action,
-        Ref<Surface> p_surface,
-        Ref<Unit> p_caster,
-        const Vector2i p_target,
-        Node *p_parent = nullptr)
-        : parent(p_parent), action(p_action), surface(p_surface), caster(p_caster), target(p_target){};
+    Node(Ref<Surface> p_surface, Ref<Unit> p_caster)
+        : surface(p_surface), caster(p_caster){};
 
     ~Node();
     bool is_leaf() const;
+    virtual ActionIdentifier get_action() const;
+    virtual Vector2i get_target() const;
 };
 
-class ActuionCastNode : public Node
+class ActionCastNode : public Node
 {
+
+private:
+    const ActionIdentifier action;
+    const Vector2i target;
+
+public:
+    ActionCastNode(
+        const ActionIdentifier p_action,
+        Ref<Surface> p_surface,
+        Ref<Unit> p_caster,
+        const Vector2i p_target)
+        : action(p_action), target(p_target), Node(p_surface, p_caster){};
+
+    ActionIdentifier get_action() const override;
+    Vector2i get_target() const override;
 };
 
-class RandomResultNode : public Node
+class RandomHandRefillNode : public Node
 {
+public:
+    const ActionIdentifier refilled_action;
+
+    RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled);
 };
 
 using SelectionFunction = float (*)(Node *, Faction);

@@ -99,7 +99,9 @@ namespace godot
         bool is_in_hand(const ActionIdentifier id) const;
         void remove_from_hand(const ActionIdentifier id);
         void add_to_hand(const ActionIdentifier id);
+        std::vector<ActionIdentifier> get_refill_candidates() const;
         void refill_hand();
+        void refill_hand(ActionIdentifier refilled_action);
     };
 
     Unit *as_unit_ptr(Ref<SurfaceElement> element);

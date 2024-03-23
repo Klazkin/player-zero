@@ -449,10 +449,12 @@ void cast_sundive(const CastInfo &cast)
 void cast_blooddrawing(const CastInfo &cast)
 {
     cast.caster->hit(3);
-
-    cast.caster->add_to_hand(BLOODDRAWING);
-    cast.caster->refill_hand();
-    cast.caster->remove_from_hand(BLOODDRAWING);
+    if (cast.surface->get_random_events_enabled())
+    {
+        cast.caster->add_to_hand(BLOODDRAWING);
+        cast.caster->refill_hand();
+        cast.caster->remove_from_hand(BLOODDRAWING);
+    }
 }
 
 void cast_meteorshatter(const CastInfo &cast)

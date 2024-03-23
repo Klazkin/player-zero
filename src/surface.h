@@ -29,6 +29,7 @@ namespace godot
         std::vector<Ref<Unit>> unit_order;
         int unit_order_counter = 0;
         const int SIZE = 12;
+        bool random_events_enabled = true;
 
     protected:
         static void _bind_methods();
@@ -64,6 +65,8 @@ namespace godot
         Faction get_winner() const;
         int get_remaining_factions_count() const;
         int get_size() const;
+        void set_random_events_enabled(const bool value);
+        bool get_random_events_enabled() const;
     };
 
 }

@@ -14,6 +14,16 @@ bool Node::is_leaf() const
     return children.size() == 0;
 }
 
+ActionIdentifier Node::get_action() const
+{
+    return INVALID_ACTION;
+}
+
+Vector2i Node::get_target() const
+{
+    return Vector2i();
+}
+
 float ucb(Node *node, Faction root_faction)
 {
     if (node->visits == 0)
@@ -26,7 +36,6 @@ float ucb(Node *node, Faction root_faction)
         return 0.5;
     }
 
-    // float score_multiplier = node->caster->get_faction() == root_faction ? 1.0 : -1.0;
     float exploit = node->score / node->visits;
     float explore = std::sqrt(2 * std::log(node->parent->visits) / node->visits);
     if (node->caster->get_faction() != root_faction)
@@ -63,10 +72,19 @@ Node *MonteCarloTreeSearch::select(Node *node) const
         float best_selected = -std::numeric_limits<float>::infinity();
         for (auto child : selected->children)
         {
-            float child_selection_score = selection_func(child, root->caster->get_faction());
-            if (child_selection_score > best_selected)
+            float child_selection_metric;
+            if (child->get_action() == INVALID_ACTION)
             {
-                best_selected = child_selection_score;
+                child_selection_metric = -child->visits; // pick with least visits
+            }
+            else
+            {
+                child_selection_metric = selection_func(child, root->caster->get_faction());
+            }
+
+            if (child_selection_metric > best_selected)
+            {
+                best_selected = child_selection_metric;
                 selected = child;
             }
         }
@@ -100,11 +118,68 @@ Node *MonteCarloTreeSearch::expand(Node *node)
         return node;
     }
 
+    if (node->parent != nullptr && node->get_action() == END_TURN) // new turn starting
+    {
+        for (auto action : next_caster->get_refill_candidates())
+        {
+            if (action == TREAD)
+            {
+                continue;
+            }
+
+            Ref<Surface> surface_clone = node->surface->clone();
+            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
+            next_caster_clone->refill_hand(action);
+
+            Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
+            child->parent = node;
+            node->children.push_back(child);
+        }
+
+        // if (node->children.size() == 1) Node tree collapsing logic
+        // {
+        //     Node *child = node->children[0];
+        //     node->surface = child->surface; // memory leaky?
+        //     node->caster = child->caster;
+        //     node->children.clear();
+        //     delete child;
+        // }
+
+        if (!node->is_leaf())
+        {
+            return node->children[0];
+        }
+    }
+
+    if (node->get_action() == BLOODDRAWING)
+    {
+        for (auto action : next_caster->get_refill_candidates())
+        {
+            if (action == BLOODDRAWING || action == TREAD)
+            {
+                continue;
+            }
+
+            Ref<Surface> surface_clone = node->surface->clone();
+            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
+            next_caster_clone->refill_hand(action);
+
+            Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
+            child->parent = node;
+            node->children.push_back(child);
+        }
+
+        if (!node->is_leaf())
+        {
+            return node->children[0];
+        }
+    }
+
     for (auto action : next_caster->get_hand_set())
     {
         for (auto original_cast : Action::generate_action_casts({action, node->surface, next_caster, Vector2i()}))
         {
-            Ref<Surface> surface_clone = node->surface->clone(); // todo check how handling of REF to PTR conversion goes
+            Ref<Surface> surface_clone = node->surface->clone();
             Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
 
             if (next_caster_clone.is_null() || !next_caster_clone.is_valid())
@@ -124,7 +199,7 @@ Node *MonteCarloTreeSearch::expand(Node *node)
             if (Action::_is_castable(clone_cast))
             {
                 Action::_cast_action(clone_cast);
-                Node *newNode = new Node(action, surface_clone, next_caster_clone, clone_cast.target);
+                Node *newNode = new ActionCastNode(action, surface_clone, next_caster_clone, clone_cast.target);
                 newNode->parent = node;
                 node->children.push_back(newNode);
             }
@@ -344,10 +419,9 @@ std::vector<float> serialize_state(Ref<Surface> surface)
     return ret;
 }
 
-void serialize_node_to_stream(Node *node, std::ofstream &to_file, float score)
+void serialize_action_node_to_stream(ActionCastNode *node, std::ofstream &to_file, float score)
 {
-
-    Vector2i cast_offset = (node->target - node->caster->get_position());
+    Vector2i cast_offset = (node->get_target() - node->caster->get_position());
     // float score_multiplier = (node->caster->get_faction() == root->caster->get_faction()) ? 1.0 : -1.0; // invert score for enemy
 
     Ref<Unit> parent_node_caster = nullptr;
@@ -367,10 +441,10 @@ void serialize_node_to_stream(Node *node, std::ofstream &to_file, float score)
     }
 
     CastInfo cast_with_parent_state = {
-        node->action,
+        node->get_action(),
         node->parent->surface,
         parent_node_caster,
-        node->target,
+        node->get_target(),
     };
     auto data_vector = serialize_cast(cast_with_parent_state);
 
@@ -406,8 +480,10 @@ void serialize_tree_to_stream(const Node *node, std::ofstream &to_file, const in
 
     for (auto n : node->children)
     {
-
-        serialize_node_to_stream(n, to_file, ((float)n->visits / (float)max_visits));
+        if (node->get_action() != INVALID_ACTION)
+        {
+            serialize_action_node_to_stream((ActionCastNode *)node, to_file, ((float)n->visits / (float)max_visits));
+        }
         serialize_tree_to_stream(n, to_file, visits_threshold);
     }
 }
@@ -430,9 +506,9 @@ void draw_tree(Node *node, int depth, Faction root_faction)
         std::cout << ")";
     }
 
-    std::cout << node->action << "/"
-              << node->target.x << "/"
-              << node->target.y << "/"
+    std::cout << node->get_action() << "/"
+              << node->get_target().x << "/"
+              << node->get_target().y << "/"
               << node->visits << "/"
               << node->score << "/"
               << ucb(node, root_faction) << "/"
@@ -480,4 +556,18 @@ float WinPredictorTreeSearch::calculate_surface_score(Ref<Surface> surface) cons
         return 1.0 - player_winrate;
     }
     return player_winrate;
+}
+
+RandomHandRefillNode::RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled) : refilled_action(p_refilled), Node(p_surface, p_caster)
+{
+}
+
+ActionIdentifier ActionCastNode::get_action() const
+{
+    return action;
+}
+
+Vector2i ActionCastNode::get_target() const
+{
+    return target;
 }

@@ -1,6 +1,7 @@
 #include "actor.h"
 #include "action.h"
 #include "monte_carlo.h"
+#include "tree_action_bundle.h"
 
 #include <algorithm>
 #include <chrono>
@@ -191,58 +192,25 @@ void write_vec_to_file(ofstream &to_file, const std::vector<float> &vec)
 
 Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns, const String &data_path)
 {
-    Ref<ActionBundle> ab = memnew(ActionBundle);
+    Ref<ActionBundle> ab = memnew(TreeActionBundle);
+
     Ref<Surface> surface_clone = surface->clone();
+    surface_clone->set_random_events_enabled(false);
     Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-    Node *root = new Node(END_TURN, surface_clone, caster_clone, Vector2i(0, 0));
+    Node *root = new Node(surface_clone, caster_clone);
     MonteCarloTreeSearch mcts(root, max_rollout_turns, ucb, perfrom_random_actions_for_turn);
     mcts.run(interations);
 
+    // simplify
+    ((TreeActionBundle *)*ab)->caster = caster;
+    ((TreeActionBundle *)*ab)->surface = surface;
+    ((TreeActionBundle *)*ab)->root = root;
+
     ofstream data_file_stream;
-    if (!data_path.is_empty())
-    {
-        data_file_stream.open(std::string(data_path.ascii()), std::ios::app);
-    }
     Node *node = root;
-    // mcts.draw_tree(node, 10);
-    while (!node->is_leaf())
-    {
-        float best_score = -std::numeric_limits<float>::infinity();
-        Node *best_child = nullptr;
-        for (auto child : node->children)
-        {
-            float child_score = child->visits; // TODO try different scorings
-            if (child_score > best_score)
-            {
-                best_score = child_score;
-                best_child = child;
-            }
-        }
+    draw_tree(node, 8, root->caster->get_faction());
 
-        CastInfo ci = {best_child->action, surface, caster, best_child->target};
-        ab->push_back_cast(ci);
-        node = best_child;
-
-        if (!data_path.is_empty())
-        {
-            write_vec_to_file(data_file_stream, serialize_state(node->parent->surface));
-        }
-
-        if (node->action == END_TURN)
-        {
-            break;
-        }
-    }
-
-    if (node->is_leaf())
-    { // Due to a bug where MCTS tree stops generating after a victory, it does not add END_TURN action cast after winning.
-        ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
-    }
-
-    // mcts.serialize_tree_to_stream(mcts.root, data_file_stream, 2500);
-    data_file_stream.close();
-
-    delete root;
+    // delete root; root ownership transfered to TreeActionBundle
     return ab;
 }
 
@@ -452,8 +420,9 @@ Ref<ActionBundle> Actor::get_actions_from_wpmcts(Ref<Unit> caster, Ref<Surface> 
 {
     Ref<ActionBundle> ab = memnew(ActionBundle);
     Ref<Surface> surface_clone = surface->clone();
+    surface_clone->set_random_events_enabled(false);
     Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-    Node *root = new Node(END_TURN, surface_clone, caster_clone, Vector2i(0, 0));
+    Node *root = new Node(surface_clone, caster_clone);
     WinPredictorTreeSearch wpts(root, max_rollout_turns, ucb, perfrom_random_actions_for_turn);
     wpts.run(interations);
 
@@ -473,11 +442,11 @@ Ref<ActionBundle> Actor::get_actions_from_wpmcts(Ref<Unit> caster, Ref<Surface> 
             }
         }
 
-        CastInfo ci = {best_child->action, surface, caster, best_child->target};
+        CastInfo ci = {best_child->get_action(), surface, caster, best_child->get_target()};
         ab->push_back_cast(ci);
         node = best_child;
 
-        if (node->action == END_TURN)
+        if (node->get_action() == END_TURN)
         {
             break;
         }

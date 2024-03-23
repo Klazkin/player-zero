@@ -8,18 +8,16 @@ class ActionBundle : public RefCounted
 {
     GDCLASS(ActionBundle, RefCounted);
 
-private:
+protected:
     std::vector<CastInfo> casts;
     int cast_counter = 0;
-
-protected:
     static void _bind_methods();
 
 public:
     ActionBundle();
     ~ActionBundle();
 
-    bool cast_until_finished();
+    virtual bool cast_until_finished();
     std::vector<CastInfo> get_casts() const;
     void push_back_cast(const CastInfo &cast);
 };
