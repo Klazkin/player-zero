@@ -356,7 +356,7 @@ void godot::Unit::add_to_hand(const ActionIdentifier id)
     emit_signal("action_added_to_hand", id);
 }
 
-void Unit::refill_hand() // TODO use shuffle instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
+void Unit::refill_hand() // TODO use shuffle bag instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
 {
     if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
     {
