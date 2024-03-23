@@ -153,6 +153,12 @@ PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const V
     }
 
     PackedVector2Array path;
+
+    if (frontier.empty())
+    {
+        return path; // empty path, could not reach goal
+    }
+
     auto recon_pos = path_end;
     while (recon_pos != path_start)
     {

@@ -648,6 +648,11 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
                       << "\ttread_target " << tread_target.x << " " << tread_target.y << "\n"
                       << "\tunit  " << u->get_position().x << " " << u->get_position().y << "\n"
                       << "\tcaster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n";
+
+            for (auto p : path)
+            {
+                std::cout << p.x << ":" << p.y << "\n";
+            }
         }
 
         // for (auto n : initial_info.surface->get_free_neighbors(initial_info.caster->get_position()))
