@@ -18,7 +18,7 @@ void Actor::_bind_methods()
     ClassDB::bind_static_method("Actor", D_METHOD("perfrom_random_actions_for_turn", "caster", "surface"), &Actor::perfrom_random_actions_for_turn);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_model", "caster", "surface"), &Actor::get_actions_from_model);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_random", "caster", "surface"), &Actor::get_actions_from_random);
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_wpmcts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_wpmcts);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_wpts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_wpts);
 }
 
 Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
@@ -285,9 +285,9 @@ Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> 
     return ab;
 }
 
-Ref<ActionBundle> Actor::get_actions_from_wpmcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns)
+Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns)
 {
-    Ref<TreeActionBundle> ab = memnew(TreeActionBundle(caster, surface));
+    Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
     WinPredictorTreeSearch wpts(ab->get_root(), max_rollout_turns, ucb, perfrom_random_actions_for_turn);
     wpts.run(interations);
     // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
