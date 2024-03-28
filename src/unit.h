@@ -23,9 +23,9 @@ namespace godot
 
     struct StatModifiers
     {
-        int speed = 0;
         int max_health = 0;
-        int damage = 0;
+        int speed = 0;
+        int attack = 0;
         int defence = 0;
         bool stunned = false;
         bool armored = false;
@@ -43,6 +43,8 @@ namespace godot
         Faction faction = UNDEFINED;
         int base_max_health = 20;
         int base_speed = 0;
+        int base_attack = 0;
+        int base_defence = 0;
         int health = 20;
 
     protected:
@@ -68,6 +70,14 @@ namespace godot
         void set_base_speed(const int p_speed);
         int get_base_speed() const;
         int get_speed() const;
+
+        void set_base_attack(const int p_attack);
+        int get_base_attack() const;
+        int get_attack() const;
+
+        void set_base_defence(const int p_defence);
+        int get_base_defence() const;
+        int get_defence() const;
 
         void set_faction(const Faction p_faction);
         Faction get_faction() const;

@@ -48,6 +48,8 @@ void cast_blooddrawing(const CastInfo &cast);
 void cast_meteorshatter(const CastInfo &cast);
 void cast_hoarfrost(const CastInfo &cast);
 void cast_coilblade_singular(const CastInfo &cast);
+void cast_swiftarrow(const CastInfo &cast);
+void cast_blessing(const CastInfo &cast);
 
 void multicaster(const CastInfo &cast,
                  ActionCheckType local_checker,
@@ -61,6 +63,7 @@ std::vector<CastInfo> gen_all_elements_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_all_units_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_all_other_units_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_all_units_with_checker(const CastInfo &initial_info);
+std::vector<CastInfo> gen_all_elements_with_checker(const CastInfo &initial_info);
 std::vector<CastInfo> gen_4direction_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info);

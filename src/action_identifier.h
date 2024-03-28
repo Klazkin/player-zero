@@ -36,6 +36,9 @@ enum ActionIdentifier
     HOARFROST,        // 23 P target recieves less damage (defence boost), (and attacker gets hit)
     RAPID_GROWTH,     // 24 X immediate heal
     SUBLIMESTRUCTURE, // 25
+    SWIFTARROW,       // 26
+    ALIGNMENT_LANCE,  // 27
+    BLESSING          // 28
 };
 
 VARIANT_ENUM_CAST(ActionIdentifier);

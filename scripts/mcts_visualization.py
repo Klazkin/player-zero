@@ -35,6 +35,10 @@ class Action(Enum):
     OBLIVION = auto()
     HOARFROST = auto()
     RAPID_GROWTH = auto()
+    SUBLIMESTRUCTURE = auto()
+    SWIFTARROW = auto()
+    ALIGNMENT_LANCE = auto()
+
 
 
 action_name_dict = {

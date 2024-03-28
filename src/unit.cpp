@@ -22,6 +22,16 @@ void Unit::_bind_methods()
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_speed"), "set_base_speed", "get_base_speed");
     ClassDB::bind_method(D_METHOD("get_speed"), &Unit::get_speed);
 
+    ClassDB::bind_method(D_METHOD("get_base_attack"), &Unit::get_base_attack);
+    ClassDB::bind_method(D_METHOD("set_base_attack", "p_attack"), &Unit::set_base_attack);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_attack"), "set_base_attack", "get_base_attack");
+    ClassDB::bind_method(D_METHOD("get_attack"), &Unit::get_attack);
+
+    ClassDB::bind_method(D_METHOD("get_base_defence"), &Unit::get_base_defence);
+    ClassDB::bind_method(D_METHOD("set_base_defence", "p_defence"), &Unit::set_base_defence);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_defence"), "set_base_defence", "get_base_defence");
+    ClassDB::bind_method(D_METHOD("get_defence"), &Unit::get_defence);
+
     ClassDB::bind_method(D_METHOD("get_faction"), &Unit::get_faction);
     ClassDB::bind_method(D_METHOD("set_faction", "p_faction"), &Unit::set_faction);
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "faction"), "set_faction", "get_faction");
@@ -169,6 +179,36 @@ int Unit::get_base_speed() const
 int Unit::get_speed() const
 {
     return base_speed + stat_modifiers.speed;
+}
+
+void Unit::set_base_attack(const int p_attack)
+{
+    base_attack = p_attack;
+}
+
+int Unit::get_base_attack() const
+{
+    return base_attack;
+}
+
+int Unit::get_attack() const
+{
+    return base_attack + stat_modifiers.attack;
+}
+
+void Unit::set_base_defence(const int p_defence)
+{
+    base_defence = p_defence;
+}
+
+int Unit::get_base_defence() const
+{
+    return base_defence;
+}
+
+int Unit::get_defence() const
+{
+    return base_defence + stat_modifiers.defence;
 }
 
 void Unit::set_faction(const Faction p_faction)

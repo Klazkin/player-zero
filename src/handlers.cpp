@@ -28,7 +28,8 @@ void register_handlers()
 
     Action::register_action(
         GROUNDRAISE,
-        check_cell_free,
+        [](const CastInfo &c)
+        { return check_cell_free(c) && check_cast_distance(c, 1); },
         cast_groundraise,
         gen_closest_free_cast);
 
@@ -154,6 +155,32 @@ void register_handlers()
         check_ally_unit_only,
         cast_hoarfrost,
         gen_all_units_with_checker);
+
+    Action::register_action(
+        SWIFTARROW,
+        [](const CastInfo &c)
+        { return check_line_of_sight(c) && check_cell_taken(c) && check_cast_distance(c, 15); },
+        cast_swiftarrow,
+        gen_all_elements_with_checker);
+
+    Action::register_action(
+        ALIGNMENT_LANCE,
+        check_is_direction_valid,
+        [](const CastInfo &c)
+        {
+            multicaster(
+                c,
+                check_cell_taken,
+                cast_coilblade_singular,
+                {Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0)});
+        },
+        gen_4direction_cast);
+
+    Action::register_action(
+        BLESSING,
+        check_always_allow,
+        cast_blessing,
+        gen_self_cast);
 }
 
 void register_combinations()
@@ -266,7 +293,7 @@ void cast_nothing(const CastInfo &cast)
 void cast_wrathspark(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
-    target_element->hit(3);
+    target_element->hit(3 + cast.caster->get_attack());
     if (target_element->is_unit())
     {
         Unit *target_unit = as_unit_ptr(target_element);
@@ -324,7 +351,7 @@ void cast_debug_kill(const CastInfo &cast)
 void cast_wispsparks(const CastInfo &cast)
 {
     Ref<SurfaceElement> target_element = cast.surface->get_element(cast.target);
-    target_element->hit(3);
+    target_element->hit(3 + cast.caster->get_attack());
 }
 
 void cast_bonedust(const CastInfo &cast)
@@ -366,7 +393,11 @@ void cast_bonesparks(const CastInfo &cast)
 
 void cast_altar(const CastInfo &cast)
 {
-    Ref<SurfaceElement> altar = memnew(DestructibleElement);
+    Ref<Unit> altar = memnew(Unit);
+    altar->set_base_speed(-10);
+    altar->set_health(5);
+    altar->set_faction(cast.caster->get_faction());
+    // altar->set_deck([ END_TURN, BLESSING ]);
     cast.surface->place_element(cast.target, altar);
 }
 
@@ -412,7 +443,7 @@ void cast_immolation(const CastInfo &cast)
     StatModifiers &sm = target_unit->get_stat_modifiers();
 
     sm.speed += 1;
-    sm.damage += 4;
+    sm.attack += 4;
     sm.defence -= 1;
 }
 
@@ -461,7 +492,7 @@ void cast_meteorshatter(const CastInfo &cast)
 {
     Ref<SurfaceElement> target = cast.surface->get_element(cast.target);
     const int RADIUS = 3;
-    target->hit(5);
+    target->hit(5 + cast.caster->get_attack());
 
     for (auto key_val_pair : cast.surface->get_element_positions())
     {
@@ -481,7 +512,29 @@ void cast_hoarfrost(const CastInfo &cast)
 
 void cast_coilblade_singular(const CastInfo &cast)
 {
-    cast.surface->get_element(cast.target)->hit(4 + cast.caster->get_stat_modifiers().damage);
+    cast.surface->get_element(cast.target)->hit(4 + cast.caster->get_attack());
+}
+
+void cast_swiftarrow(const CastInfo &cast)
+{
+    Ref<SurfaceElement> target = cast.surface->get_element(cast.target);
+    int damage_bonus = (cast.caster->get_position() - cast.target).length() / 2;
+    target->hit(1 + damage_bonus + cast.caster->get_attack());
+}
+
+void cast_blessing(const CastInfo &cast)
+{
+    const int RADIUS = 3;
+
+    for (auto u : cast.surface->get_only_units_vec())
+    {
+        if (u != cast.caster &&
+            u->get_faction() == cast.caster->get_faction() &&
+            (u->get_position() - cast.caster->get_position()).length_squared() <= RADIUS * RADIUS)
+        {
+            u->heal(2);
+        }
+    }
 }
 
 void multicaster(
@@ -526,7 +579,7 @@ std::vector<CastInfo> gen_self_cast(const CastInfo &initial_info)
     });
 }
 
-std::vector<CastInfo> gen_closest_free_cast(const CastInfo &initial_info) // todo expand bfs style
+std::vector<CastInfo> gen_closest_free_cast(const CastInfo &initial_info)
 {
     std::vector<CastInfo> ret;
     for (auto neighbor : initial_info.surface->get_free_neighbors(initial_info.caster->get_position()))
@@ -587,6 +640,27 @@ std::vector<CastInfo> gen_all_units_with_checker(const CastInfo &initial_info)
                          initial_info.surface,
                          initial_info.caster,
                          unit->get_position()};
+
+        if (!checker(cast))
+        {
+            continue;
+        }
+
+        ret.push_back(cast);
+    }
+    return ret;
+}
+
+std::vector<CastInfo> gen_all_elements_with_checker(const CastInfo &initial_info)
+{
+    ActionCheckType checker = Action::get_action_checker(initial_info.action);
+    std::vector<CastInfo> ret;
+    for (auto key_val_pair : initial_info.surface->get_element_positions())
+    {
+        CastInfo cast = {initial_info.action,
+                         initial_info.surface,
+                         initial_info.caster,
+                         key_val_pair.first};
 
         if (!checker(cast))
         {

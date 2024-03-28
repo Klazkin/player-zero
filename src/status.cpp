@@ -179,7 +179,7 @@ void Immolation::on_turn_start()
 {
     StatModifiers &sm = target_ptr->get_stat_modifiers();
     sm.speed += 1;
-    sm.damage += 4;
+    sm.attack += 4;
     sm.defence -= 1;
 
     if (get_duration() == 1)
