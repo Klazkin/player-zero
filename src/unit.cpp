@@ -22,6 +22,16 @@ void Unit::_bind_methods()
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_speed"), "set_base_speed", "get_base_speed");
     ClassDB::bind_method(D_METHOD("get_speed"), &Unit::get_speed);
 
+    ClassDB::bind_method(D_METHOD("get_base_attack"), &Unit::get_base_attack);
+    ClassDB::bind_method(D_METHOD("set_base_attack", "p_attack"), &Unit::set_base_attack);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_attack"), "set_base_attack", "get_base_attack");
+    ClassDB::bind_method(D_METHOD("get_attack"), &Unit::get_attack);
+
+    ClassDB::bind_method(D_METHOD("get_base_defence"), &Unit::get_base_defence);
+    ClassDB::bind_method(D_METHOD("set_base_defence", "p_defence"), &Unit::set_base_defence);
+    ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "base_defence"), "set_base_defence", "get_base_defence");
+    ClassDB::bind_method(D_METHOD("get_defence"), &Unit::get_defence);
+
     ClassDB::bind_method(D_METHOD("get_faction"), &Unit::get_faction);
     ClassDB::bind_method(D_METHOD("set_faction", "p_faction"), &Unit::set_faction);
     ClassDB::add_property("Unit", PropertyInfo(Variant::INT, "faction"), "set_faction", "get_faction");
@@ -169,6 +179,36 @@ int Unit::get_base_speed() const
 int Unit::get_speed() const
 {
     return base_speed + stat_modifiers.speed;
+}
+
+void Unit::set_base_attack(const int p_attack)
+{
+    base_attack = p_attack;
+}
+
+int Unit::get_base_attack() const
+{
+    return base_attack;
+}
+
+int Unit::get_attack() const
+{
+    return base_attack + stat_modifiers.attack;
+}
+
+void Unit::set_base_defence(const int p_defence)
+{
+    base_defence = p_defence;
+}
+
+int Unit::get_base_defence() const
+{
+    return base_defence;
+}
+
+int Unit::get_defence() const
+{
+    return base_defence + stat_modifiers.defence;
 }
 
 void Unit::set_faction(const Faction p_faction)
@@ -350,24 +390,29 @@ void Unit::remove_from_hand(const ActionIdentifier id)
     emit_signal("action_removed_from_hand", id);
 }
 
-void godot::Unit::add_to_hand(const ActionIdentifier id)
+void Unit::add_to_hand(const ActionIdentifier id)
 {
     hand.insert(id);
     emit_signal("action_added_to_hand", id);
 }
 
-void Unit::refill_hand() // TODO use shuffle instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
+std::vector<ActionIdentifier> Unit::get_refill_candidates() const
+{
+    std::vector<ActionIdentifier> refill_candidates;
+    std::copy_if(deck.begin(), deck.end(), std::back_inserter(refill_candidates),
+                 [&](ActionIdentifier a)
+                 { return hand.find(a) == hand.end(); });
+    return refill_candidates;
+}
+
+void Unit::refill_hand() // TODO use shuffle bag instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
 {
     if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
     {
         add_to_hand(ActionIdentifier::TREAD); // Free refill for tread
     }
 
-    std::vector<ActionIdentifier> refill_candidates;
-
-    std::copy_if(deck.begin(), deck.end(), std::back_inserter(refill_candidates),
-                 [&](ActionIdentifier a)
-                 { return hand.find(a) == hand.end(); });
+    std::vector<ActionIdentifier> refill_candidates = get_refill_candidates();
 
     if (refill_candidates.size() == 0)
     {
@@ -375,7 +420,17 @@ void Unit::refill_hand() // TODO use shuffle instead? https://docs.godotengine.o
     }
 
     int refill_i = UtilityFunctions::randi_range(0, refill_candidates.size() - 1);
-    add_to_hand(refill_candidates[refill_i]);
+    refill_hand(refill_candidates[refill_i]);
+}
+
+void Unit::refill_hand(ActionIdentifier refilled_action)
+{
+    if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
+    {
+        add_to_hand(ActionIdentifier::TREAD); // Free refill for tread
+    }
+
+    add_to_hand(refilled_action);
 }
 
 Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)

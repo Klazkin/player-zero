@@ -7,7 +7,7 @@
 #include "handlers.h"
 #include "ortbinding.h"
 #include "destructible_element.h"
-#include "action_bundle.h"
+#include "bundles/action_bundle.h"
 #include "actor.h"
 
 #include <gdextension_interface.h>

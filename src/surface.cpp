@@ -52,6 +52,7 @@ Ref<Surface> Surface::clone() const
     CloneContext clone_context;
 
     clone->unit_order_counter = unit_order_counter;
+    clone->random_events_enabled = random_events_enabled;
 
     // positions cloning and filling out cloning context
     for (auto key_value_pair : element_positions)
@@ -152,6 +153,12 @@ PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const V
     }
 
     PackedVector2Array path;
+
+    if (frontier.empty())
+    {
+        return path; // empty path, could not reach goal
+    }
+
     auto recon_pos = path_end;
     while (recon_pos != path_start)
     {
@@ -365,7 +372,10 @@ void Surface::start_current_units_turn()
     emit_signal("turn_started", cur_unit);
     cur_unit->reset_stat_modifiers();
     cur_unit->trigger_on_start_turn_subscribers(); // todo unit may die from burn, in which case its turn should still be skipped
-    cur_unit->refill_hand();
+    if (random_events_enabled)
+    {
+        cur_unit->refill_hand();
+    }
 }
 
 void Surface::emit_action_cast(const int action, const Ref<Unit> caster, const Vector2i target)
@@ -422,6 +432,16 @@ int Surface::get_remaining_factions_count() const
 int Surface::get_size() const
 {
     return SIZE;
+}
+
+void Surface::set_random_events_enabled(const bool value)
+{
+    random_events_enabled = value;
+}
+
+bool Surface::get_random_events_enabled() const
+{
+    return random_events_enabled;
 }
 
 TypedArray<Unit> Surface::turn_get_order() const

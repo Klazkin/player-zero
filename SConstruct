@@ -32,7 +32,7 @@ env.Append(
     ]
 )
 
-sources = Glob("src/*.cpp")
+sources = Glob("src/*.cpp") + Glob("src/*/*.cpp")
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
