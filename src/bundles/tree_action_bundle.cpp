@@ -22,14 +22,20 @@ void TreeActionBundle::cast_next()
         std::cout << "Critical: TreeActionBundle leaf node.\n";
     }
 
-    float best_score = -std::numeric_limits<float>::infinity();
+    float best_exploit = -std::numeric_limits<float>::infinity();
     Node *best_child = nullptr;
     for (auto child : node->children)
     {
-        float child_score = child->visits; // TODO try different scorings
-        if (child_score > best_score)
+        if (child->visits == 0)
         {
-            best_score = child_score;
+            std::cout << "UNEXPLORED CHILD FOUND IN TAB.\n";
+            continue;
+        }
+
+        float child_exploit = child->score / child->visits;
+        if (child_exploit > best_exploit)
+        {
+            best_exploit = child_exploit;
             best_child = child;
         }
     }
