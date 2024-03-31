@@ -22,7 +22,7 @@ public:
     Ref<SurfaceElement> clone() const override;
 
     int hit(int damage) override;
-    int get_health();
+    int get_health() const override;
 
     bool is_dead() const override;
 };

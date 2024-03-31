@@ -18,6 +18,7 @@ void Actor::_bind_methods()
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_model", "caster", "surface"), &Actor::get_actions_from_model);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_random", "caster", "surface"), &Actor::get_actions_from_random);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_wpts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_wpts);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_pzts", "caster", "surface", "iterations"), &Actor::get_actions_from_pzts);
 }
 
 Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
@@ -190,11 +191,11 @@ void write_vec_to_file(ofstream &to_file, const std::vector<float> &vec)
     to_file << '\n';
 }
 
-Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns, const String &data_path)
+Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns, const String &data_path)
 {
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
-    MonteCarloTreeSearch mcts(ab->get_root(), max_rollout_turns, ucb, perfrom_random_actions_for_turn);
-    mcts.run(interations);
+    MonteCarloTreeSearch mcts(ab->get_root(), max_rollout_turns, perfrom_random_actions_for_turn);
+    mcts.run(iterations);
     draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
     return ab;
 }
@@ -284,11 +285,26 @@ Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> 
     return ab;
 }
 
-Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> surface, int interations, int max_rollout_turns)
+Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns)
 {
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
-    WinPredictorTreeSearch wpts(ab->get_root(), max_rollout_turns, ucb, perfrom_random_actions_for_turn);
-    wpts.run(interations);
+    WinPredictorTreeSearch wpts(ab->get_root(), max_rollout_turns, perfrom_random_actions_for_turn);
+    wpts.run(iterations);
     // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
+    return ab;
+}
+
+Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations)
+{
+    Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
+    PlayerZeroTreeSearch pzts(ab->get_root(), 1.0);
+    pzts.run(iterations);
+
+    std::cout << "finished run, writing to file.";
+    ofstream data_file_stream;
+    data_file_stream.open(std::string("pzts_data.txt"), std::ios::app);
+    pzts.serialize_node(data_file_stream, ab->get_root());
+    data_file_stream.close();
+
     return ab;
 }

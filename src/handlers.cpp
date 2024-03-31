@@ -48,7 +48,7 @@ void register_handlers()
 
     Action::register_action(
         COILBLADE,
-        check_is_direction_valid,
+        check_is_adjacent,
         [](const CastInfo &c)
         {
             multicaster(
@@ -57,7 +57,7 @@ void register_handlers()
                 cast_coilblade_singular,
                 {Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)});
         },
-        gen_4direction_cast);
+        gen_adjacent);
 
     Action::register_action(
         LOS_ACTION,
@@ -165,7 +165,7 @@ void register_handlers()
 
     Action::register_action(
         ALIGNMENT_LANCE,
-        check_is_direction_valid,
+        check_is_adjacent,
         [](const CastInfo &c)
         {
             multicaster(
@@ -174,9 +174,9 @@ void register_handlers()
                 cast_coilblade_singular,
                 {Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0)});
         },
-        gen_4direction_cast);
+        gen_adjacent);
 
-    Action::register_action(
+    Action::register_action( // TODO implement along with altar
         BLESSING,
         check_always_allow,
         cast_blessing,
@@ -283,6 +283,11 @@ bool check_free_near_unit(const CastInfo &cast)
     }
 
     return false;
+}
+
+bool check_is_adjacent(const CastInfo &cast)
+{
+    return (cast.target - cast.caster->get_position()).length_squared() == 1 && cast.surface->is_within(cast.target);
 }
 
 void cast_nothing(const CastInfo &cast)
@@ -550,15 +555,16 @@ void multicaster(
 
     if (is_rotatable)
     {
-        if (cast.target == Vector2i(0, 1))
+        auto offset = (cast.target - cast.caster->get_position());
+        if (offset == Vector2i(0, 1))
             lambda_rotate = [](Vector2i p) -> Vector2i
             { return Vector2i(p.y, p.x); };
 
-        else if (cast.target == Vector2i(-1, 0))
+        else if (offset == Vector2i(-1, 0))
             lambda_rotate = [](Vector2i p) -> Vector2i
             { return Vector2i(-p.x, -p.y); };
 
-        else if (cast.target == Vector2i(0, -1))
+        else if (offset == Vector2i(0, -1))
             lambda_rotate = [](Vector2i p) -> Vector2i
             { return Vector2i(-p.y, -p.x); };
     }
@@ -800,4 +806,20 @@ std::vector<CastInfo> gen_free_near_every_unit(const CastInfo &initial_info)
     }
 
     return candidates_vec;
+}
+
+std::vector<CastInfo> gen_adjacent(const CastInfo &initial_info)
+{
+    std::vector<CastInfo> ret;
+
+    for (auto n : {Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)})
+    {
+        Vector2i pos = n + initial_info.caster->get_position();
+        if (initial_info.surface->is_within(pos))
+        {
+            ret.push_back({initial_info.action, initial_info.surface, initial_info.caster, pos});
+        }
+    }
+
+    return ret;
 }

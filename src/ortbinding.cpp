@@ -164,3 +164,131 @@ std::array<float, 2> WinPredictor::predict(std::array<float, 96> input)
     // std::cout << "finished inference\n";
     return output;
 }
+
+PlayerZeroPredictor *PlayerZeroPredictor::instance = nullptr;
+
+PlayerZeroPredictor *PlayerZeroPredictor::get()
+{
+    if (instance == nullptr)
+    {
+        instance = new PlayerZeroPredictor();
+    }
+    return instance;
+}
+
+PlayerZeroPredictor::PlayerZeroPredictor()
+{
+    std::cout << "creating cuda prov options";
+    Ort::GetApi().CreateCUDAProviderOptions(&cuda_options);
+
+    std::vector<const char *> keys{"device_id", "gpu_mem_limit", "arena_extend_strategy", "cudnn_conv_algo_search", "do_copy_in_default_stream", "cudnn_conv_use_max_workspace", "cudnn_conv1d_pad_to_nc1d"};
+    std::vector<const char *> values{"0", "2147483648", "kSameAsRequested", "DEFAULT", "1", "1", "1"};
+
+    Ort::GetApi().UpdateCUDAProviderOptions(cuda_options, keys.data(), values.data(), keys.size());
+    Ort::GetApi().SessionOptionsAppendExecutionProvider_CUDA_V2(session_options, cuda_options);
+
+    session = new Ort::Session(env, L"player_zero.onnx", session_options); // todo change model file name
+    std::cout << "finished settings session options\n";
+}
+
+PlayerZeroPredictor::~PlayerZeroPredictor()
+{
+    Ort::GetApi().ReleaseCUDAProviderOptions(cuda_options);
+    instance = nullptr;
+}
+
+// PZPrediction PlayerZeroPredictor::predict(std::array<float, 2592> input)
+// {
+
+//     const char *input_names[] = {"input"};
+//     const char *output_names[] = {"value", "policy"};
+
+//     static const size_t NUM_OUTPUTS = sizeof(output_names) / sizeof(output_names[0]);
+
+//     std::array<int64_t, 2> input_shape_{1, 2592};
+//     Ort::Value input_tensor = Ort::Value::CreateTensor<float>(memory_info, input.data(), input.size(), input_shape_.data(), input_shape_.size());
+//     std::vector<Ort::Value> output_tensors = session->Run(Ort::RunOptions{}, input_names, &input_tensor, 1, output_names, NUM_OUTPUTS);
+
+//     float *value_data_ptr = output_tensors[0].GetTensorMutableData<float>();
+//     float *policy_data_ptr = output_tensors[1].GetTensorMutableData<float>();
+
+//     auto value_shape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
+//     auto policy_shape = output_tensors[1].GetTensorTypeAndShapeInfo().GetShape();
+
+//     // std::cout << "policy shape ";
+//     // for (auto s : policy_shape)
+//     // {
+//     //     std::cout << s << " ";
+//     // }
+//     // std::cout << "\n";
+
+//     std::vector<float> value_data(value_data_ptr, value_data_ptr + value_shape.size());
+//     std::vector<float> policy_data(policy_data_ptr, (size_t)2880 + policy_shape.size());
+//     // std::array<float, 2880> ddd = policy_data;
+
+//     // std::cout << "value data ts size " << value_data.size() << "\n";
+
+//     // std::cout << "policy content ";
+//     // // for (auto d : policy_data)
+//     // // {
+//     //     std::cout << d << " ";
+//     // }
+//     for (size_t i = 0; i < 2880; i++)
+//     {
+//         std::cout << policy_data_ptr[i] << " ";
+//     }
+
+//     std::cout << "\n";
+
+//     // float value_data = *output_tensors[0].GetTensorMutableData<float>();
+//     // std::vector<float> policy_data(*output_tensors[1].GetTensorMutableData<float>(), *output_tensors[1].GetTensorMutableData<float>() + 2880);
+//     return {value_data[0], policy_data};
+// }
+
+PZPrediction PlayerZeroPredictor::predict(std::array<float, 2592> input)
+{
+    std::array<float, 1> output_1{};
+    std::array<float, 2880> output_2{};
+
+    std::array<int64_t, 2> input_shape_{1, 2592};
+    std::array<int64_t, 2> output_shape_1{1, 1};
+    std::array<int64_t, 2> output_shape_2{1, 2880};
+
+    // input_tensor_ = Ort::Value::CreateTensor<float>(memory_info, input.data(), input.size(), input_shape_.data(), input_shape_.size());
+    // output_tensor_1 = Ort::Value::CreateTensor<float>(memory_info, output_1.data(), output_1.size(), output_shape_1.data(), output_shape_1.size());
+    // output_tensor_2 = Ort::Value::CreateTensor<float>(memory_info, output_2.data(), output_2.size(), output_shape_2.data(), output_shape_2.size());
+
+    const char *input_names[] = {"input"};
+    const char *output_names[] = {"value", "policy"};
+
+    std::vector<Ort::Value> input_tensors;
+    std::vector<Ort::Value> output_tensors;
+
+    input_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, input.data(), input.size(), input_shape_.data(), input_shape_.size()));
+    output_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, output_1.data(), output_1.size(), output_shape_1.data(), output_shape_1.size()));
+    output_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, output_2.data(), output_2.size(), output_shape_2.data(), output_shape_2.size()));
+
+    // Ort::Value *p_output_tensors[2] = {
+    //     nullptr
+    //     // &Ort::Value::CreateTensor<float>(memory_info, output_1.data(), output_1.size(), output_shape_1.data(), output_shape_1.size()),
+    //     // &Ort::Value::CreateTensor<float>(memory_info, output_2.data(), output_2.size(), output_shape_2.data(), output_shape_2.size())
+    // };
+
+    // session->Run(Ort::RunOptions{}, input_names, &input_tensor_, 1, output_names, &output_tensor_, 1);
+    // auto output = session->Run(Ort::RunOptions{}, input_names, &input_tensor_, 1, output_names, &p_output_tensors, 2);
+    // std::vector<Ort::Value> output_tensors = session->Run(Ort::RunOptions{}, input_names, &input_tensor_, 1, output_names, 2);
+
+    // session->Run(Ort::RunOptions{}, input_names, &input_tensor_, 1, output_names, p_output_tensors, 2);
+    session->Run(Ort::RunOptions{nullptr}, input_names, input_tensors.data(), 1, output_names, output_tensors.data(), 2);
+
+    // std::cout << "finished inference\n";
+    //         return {
+    //             0.0,
+    //         };
+    return {output_1, output_2};
+}
+
+std::vector<float> ConvertFloatPointerToVector(const float *data, size_t size)
+{
+    return std::vector<float>(data, data + size);
+}

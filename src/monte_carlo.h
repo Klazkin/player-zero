@@ -15,7 +15,8 @@ class Node
 
 public:
     int visits = 0;
-    float score = 0;
+    float score = 0; // action value
+    float policy = 0;
     Node *parent = nullptr;
     std::vector<Node *> children;
     Ref<Surface> surface;
@@ -26,6 +27,7 @@ public:
 
     ~Node();
     bool is_leaf() const;
+    bool is_terminal() const;
     virtual ActionIdentifier get_action() const;
     virtual Vector2i get_target() const;
 };
@@ -57,7 +59,6 @@ public:
     RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled);
 };
 
-using SelectionFunction = float (*)(Node *, Faction);
 using ActionPerformerFunction = void (*)(Ref<Unit>, Ref<Surface>);
 float ucb(Node *node, Faction root_faction);
 
@@ -67,26 +68,24 @@ class MonteCarloTreeSearch
 protected:
     Node *root;
     const int max_simulation_depth;
-    const SelectionFunction selection_func;
     const ActionPerformerFunction performer_func;
 
 public:
     MonteCarloTreeSearch(
         Node *p_root,
         const int p_max_sim_depth,
-        SelectionFunction p_select,
         ActionPerformerFunction p_performer)
         : root(p_root),
           max_simulation_depth(p_max_sim_depth),
-          selection_func(p_select),
           performer_func(p_performer){};
     ~MonteCarloTreeSearch();
 
     virtual float calculate_surface_score(Ref<Surface> surface) const;
-    Node *select(Node *node) const;
-    Node *expand(Node *node);
-    float simulate(Node *node);
-    void backpropagate(Node *node, const float score);
+    virtual float selection_policy(Node *node, Faction root_faction) const; // default UCB
+    virtual Node *select(Node *node) const;
+    virtual Node *expand(Node *node);
+    virtual float simulate(Node *node);
+    virtual void backpropagate(Node *node, const float score);
     void run(const int iterations);
 };
 
@@ -103,11 +102,35 @@ public:
     WinPredictorTreeSearch(
         Node *p_root,
         const int p_max_sim_depth,
-        SelectionFunction p_select,
         ActionPerformerFunction p_performer)
-        : MonteCarloTreeSearch(p_root, p_max_sim_depth, p_select, p_performer){};
+        : MonteCarloTreeSearch(p_root, p_max_sim_depth, p_performer){};
 
     float calculate_surface_score(Ref<Surface> surface) const override;
+};
+
+std::array<float, 2592> convert_to_board(Ref<Surface> surface, const Vector2i &current_caster_position);
+
+class PlayerZeroTreeSearch : public MonteCarloTreeSearch
+{
+
+private:
+    float cpuct;
+
+public:
+    PlayerZeroTreeSearch(
+        Node *p_root,
+        float p_cpuct)
+        : cpuct(p_cpuct),
+          MonteCarloTreeSearch(p_root, -1, nullptr){};
+
+    float selection_policy(Node *node, Faction root_faction) const override;
+    float calculate_surface_score(Ref<Surface> surface) const override;
+    Node *expand(Node *node) override;
+    float simulate(Node *node) override;
+    void backpropagate(Node *node, const float score) override;
+
+    void serialize_node(std::ofstream &to_file, Node *node);
+    void serialize_tree(std::ofstream &to_file);
 };
 
 #endif

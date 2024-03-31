@@ -24,6 +24,7 @@ bool check_cast_distance(const CastInfo &cast, int max_distance);
 bool check_line_of_sight(const CastInfo &cast);
 bool check_action_combination(const CastInfo &cast);
 bool check_free_near_unit(const CastInfo &cast);
+bool check_is_adjacent(const CastInfo &cast);
 
 void cast_nothing(const CastInfo &cast);
 void cast_wrathspark(const CastInfo &cast);
@@ -68,5 +69,6 @@ std::vector<CastInfo> gen_4direction_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info);
 std::vector<CastInfo> gen_action_combinations(const CastInfo &initial_info);
 std::vector<CastInfo> gen_free_near_every_unit(const CastInfo &initial_info);
+std::vector<CastInfo> gen_adjacent(const CastInfo &initial_info);
 
 #endif

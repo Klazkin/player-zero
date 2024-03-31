@@ -61,7 +61,7 @@ namespace godot
         int heal(int damage);
 
         void set_health(const int p_health);
-        int get_health() const;
+        int get_health() const override;
 
         void set_base_max_health(const int p_max_health);
         int get_base_max_health() const;

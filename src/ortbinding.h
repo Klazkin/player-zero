@@ -42,4 +42,31 @@ public:
     std::array<float, 2> predict(std::array<float, 96> input);
 };
 
+struct PZPrediction
+{
+    std::array<float, 1> &value;
+    std::array<float, 2880> &policy;
+};
+
+class PlayerZeroPredictor
+{
+private:
+    static PlayerZeroPredictor *instance;
+
+    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+    Ort::Env env{ORT_LOGGING_LEVEL_INFO, "PlayerZero"};
+    OrtCUDAProviderOptionsV2 *cuda_options = nullptr;
+    Ort::SessionOptions session_options;
+    Ort::Session *session = nullptr;
+
+    PlayerZeroPredictor();
+    ~PlayerZeroPredictor();
+
+public:
+    static PlayerZeroPredictor *get();
+
+    // input space is 12 * 12 * 18, output space is 1 + 12 * 12 * 20,
+    PZPrediction predict(std::array<float, 2592> input);
+};
+
 #endif

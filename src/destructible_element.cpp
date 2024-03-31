@@ -33,9 +33,9 @@ int DestructibleElement::hit(int damage)
     return damage;
 }
 
-int DestructibleElement::get_health()
+int DestructibleElement::get_health() const
 {
-    return 0;
+    return health;
 }
 
 bool DestructibleElement::is_dead() const

@@ -34,6 +34,7 @@ public:
     virtual Ref<SurfaceElement> clone() const;
 
     virtual int hit(int damage);
+    virtual int get_health() const;
     virtual void trigger_death();
 
     bool get_is_on_surface() const;

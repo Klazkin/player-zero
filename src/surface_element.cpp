@@ -39,6 +39,11 @@ int SurfaceElement::hit(int damage)
     return 0;
 }
 
+int SurfaceElement::get_health() const
+{
+    return 0;
+}
+
 void SurfaceElement::trigger_death()
 {
     death_sub->on_death();
