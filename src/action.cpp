@@ -69,12 +69,12 @@ bool Action::_is_castable(const CastInfo &cast_info)
         return false;
     }
 
-    if (cast_info.caster->is_unit() && !cast_info.caster->is_in_hand(cast_info.action))
+    if (!cast_info.caster->is_in_hand(cast_info.action))
     {
         return false;
     }
 
-    if (cast_info.caster->is_unit() && cast_info.caster->is_dead())
+    if (cast_info.caster->is_dead())
     {
         std::cout << "attempted to cast while dead\n";
         return false;
@@ -85,7 +85,7 @@ bool Action::_is_castable(const CastInfo &cast_info)
 
 void Action::_cast_action(const CastInfo &cast_info)
 {
-    if (cast_info.caster->is_unit() && cast_info.action != COMBINE_ACTIONS && cast_info.action != END_TURN)
+    if (cast_info.action != COMBINE_ACTIONS && cast_info.action != END_TURN)
     // todo add logic for "infinite actions"
     {
         cast_info.caster->remove_from_hand(cast_info.action);

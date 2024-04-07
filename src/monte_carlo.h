@@ -129,8 +129,9 @@ public:
     float simulate(Node *node) override;
     void backpropagate(Node *node, const float score) override;
 
-    void serialize_node(std::ofstream &to_file, Node *node);
+    static void serialize_node(std::ofstream &to_file, Node *node);
     void serialize_tree(std::ofstream &to_file);
+    void test_for_multiple_factions(Node *node);
 };
 
 #endif

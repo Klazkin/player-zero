@@ -16,8 +16,10 @@ protected:
     static void _bind_methods();
 
 public:
-    static void append_winner_to_file(const String &data_path, const Faction winner);
+    static void append_winner_to_file(const String &path, const Faction winner);
+    static void write_winner_at_the_end_of_file(const String &path, const Faction winner);
     static void perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface);
+    static void reload_pzts_model();
     static Ref<ActionBundle> get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface);
     static Ref<ActionBundle> get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns, const String &data_path);
     static Ref<ActionBundle> get_actions_from_model(Ref<Unit> caster, Ref<Surface> surface);

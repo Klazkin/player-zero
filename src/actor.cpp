@@ -12,6 +12,7 @@
 void Actor::_bind_methods()
 {
     ClassDB::bind_static_method("Actor", D_METHOD("append_winner_to_file", "data_path", "winner"), &Actor::append_winner_to_file);
+    ClassDB::bind_static_method("Actor", D_METHOD("write_winner_at_the_end_of_file", "data_path", "winner"), &Actor::write_winner_at_the_end_of_file);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "caster", "surface"), &Actor::get_actions_from_decision_tree);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface", "iterations", "max_rollout_turns", "data_path"), &Actor::get_actions_from_mcts);
     ClassDB::bind_static_method("Actor", D_METHOD("perfrom_random_actions_for_turn", "caster", "surface"), &Actor::perfrom_random_actions_for_turn);
@@ -19,6 +20,7 @@ void Actor::_bind_methods()
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_random", "caster", "surface"), &Actor::get_actions_from_random);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_wpts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_wpts);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_pzts", "caster", "surface", "iterations"), &Actor::get_actions_from_pzts);
+    ClassDB::bind_static_method("Actor", D_METHOD("reload_pzts_model"), &Actor::reload_pzts_model);
 }
 
 Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface)
@@ -91,15 +93,15 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Su
     return ab;
 }
 
-void Actor::append_winner_to_file(const String &data_path, const Faction winner)
+void Actor::append_winner_to_file(const String &path, const Faction winner)
 {
-    std::fstream file(data_path.ascii(), std::ios::in | std::ios::out);
+    std::fstream file(path.ascii(), std::ios::in | std::ios::out);
     std::vector<std::string> lines;
     std::string line;
 
     if (!file)
     {
-        std::cerr << "Could not open file " << data_path.ascii() << std::endl;
+        std::cerr << "Could not open file " << path.ascii() << std::endl;
         return;
     }
 
@@ -117,6 +119,15 @@ void Actor::append_winner_to_file(const String &data_path, const Faction winner)
     }
 
     file.close();
+}
+
+void Actor::write_winner_at_the_end_of_file(const String &path, const Faction winner)
+{
+    ofstream data_file_stream;
+    data_file_stream.open(std::string(path.ascii()), std::ios::app);
+    data_file_stream << "0\n0\n" // double zeroes mark the end of the file
+                     << winner << "\n";
+    data_file_stream.close();
 }
 
 void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface)
@@ -172,6 +183,11 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
             break;
         }
     }
+}
+
+void Actor::reload_pzts_model()
+{
+    PlayerZeroPredictor::reload_model();
 }
 
 void write_vec_to_file(ofstream &to_file, const std::vector<float> &vec)
@@ -299,12 +315,7 @@ Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> su
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
     PlayerZeroTreeSearch pzts(ab->get_root(), 1.0);
     pzts.run(iterations);
-
-    std::cout << "finished run, writing to file.";
-    ofstream data_file_stream;
-    data_file_stream.open(std::string("pzts_data.txt"), std::ios::app);
-    pzts.serialize_node(data_file_stream, ab->get_root());
-    data_file_stream.close();
-
+    // draw_tree(ab->get_root(), 5, ab->get_root()->caster->get_faction());
+    pzts.test_for_multiple_factions(ab->get_root());
     return ab;
 }

@@ -17,6 +17,7 @@ public:
 
     virtual bool is_finished() const;
     virtual void cast_next();
+    virtual void save_data(const String &path);
 
     void warn_not_castable(const CastInfo &cast) const;
 };

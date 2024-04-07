@@ -11,7 +11,8 @@ private:
     Ref<Surface> surface;
     Ref<Unit> caster;
     Node *root;
-    Node *node;
+    Node *current_node;
+    bool forced_to_finish = false;
 
 public:
     TreeActionBundle(Ref<Surface> p_surface, Ref<Unit> p_caster)
@@ -21,7 +22,7 @@ public:
         surface_clone->set_random_events_enabled(false);
         Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
         root = new Node(surface_clone, caster_clone);
-        node = root;
+        current_node = root;
     };
 
     ~TreeActionBundle();
@@ -29,6 +30,7 @@ public:
     bool is_finished() const override;
     void cast_next() override;
     Node *get_root() const;
+    void save_data(const String &path) override;
 };
 
 #endif

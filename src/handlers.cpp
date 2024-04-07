@@ -187,7 +187,7 @@ void register_combinations()
 {
     Action::register_combination(BONEDUST, WISPSPARKS, BONESPARKS);
 
-    Action::register_combination(BLOODDRAWING, GROUNDRAISE, ALTAR);
+    // Action::register_combination(BLOODDRAWING, GROUNDRAISE, ALTAR);
     Action::register_combination(BLOODDRAWING, RESPIRIT, ETERNALSHACLES);
     Action::register_combination(BLOODDRAWING, TREAD, NETHERSWAP);
     Action::register_combination(RESPIRIT, TREAD, RAPID_GROWTH);

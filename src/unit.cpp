@@ -78,6 +78,8 @@ Ref<SurfaceElement> Unit::clone() const
     clone->base_max_health = base_max_health;
     clone->health = health;
     clone->base_speed = base_speed;
+    clone->base_attack = base_attack;
+    clone->base_defence = base_defence;
     clone->faction = faction;
 
     clone->deck = deck;                     // copies
@@ -386,6 +388,11 @@ bool Unit::is_in_hand(const ActionIdentifier id) const
 
 void Unit::remove_from_hand(const ActionIdentifier id)
 {
+    if (id == END_TURN)
+    {
+        std::cout << "attempting to erase END_TURN\n";
+    }
+
     hand.erase(id);
     emit_signal("action_removed_from_hand", id);
 }
@@ -430,7 +437,10 @@ void Unit::refill_hand(ActionIdentifier refilled_action)
         add_to_hand(ActionIdentifier::TREAD); // Free refill for tread
     }
 
-    add_to_hand(refilled_action);
+    if (refilled_action != INVALID_ACTION)
+    {
+        add_to_hand(refilled_action);
+    }
 }
 
 Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)

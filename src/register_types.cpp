@@ -19,6 +19,9 @@ using namespace godot;
 
 void initialize_example_module(ModuleInitializationLevel p_level)
 {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
     if (p_level != GDEXTENSION_INITIALIZATION_CORE)
         return;
 

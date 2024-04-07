@@ -5,6 +5,7 @@ void ActionBundle::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("is_finished"), &ActionBundle::is_finished);
     ClassDB::bind_method(D_METHOD("cast_next"), &ActionBundle::cast_next);
+    ClassDB::bind_method(D_METHOD("save_data", "path"), &ActionBundle::save_data);
 }
 
 bool ActionBundle::is_finished() const
@@ -19,6 +20,11 @@ void ActionBundle::cast_next()
     {
         return;
     }
+}
+
+void ActionBundle::save_data(const String &path)
+{
+    std::cout << "Attempting to save data on abstract ActionBundle.\n";
 }
 
 void ActionBundle::warn_not_castable(const CastInfo &cast) const

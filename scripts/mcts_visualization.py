@@ -7,26 +7,27 @@ with open("graph.data", "r") as f:
 
 
 class Action(Enum):
-    END_TURN = -3
-    COMBINE_ACTIONS = -2
     INVALID_ACTION = -1
-    IDLE = auto()
+    TREAD = auto()
+    COILBLADE = auto()
+    SWIFTARROW = auto()
+    ALIGNMENT_LANCE = auto()
     WRATHSPARK = auto()
     GROUNDRAISE = auto()
     BLOODDRAWING = auto()
-    TREAD = auto()
-    COILBLADE = auto()
+    WISPSPARKS = auto()
+    BONEDUST = auto()
+    RESPIRIT = auto()
+    SNOWMOTES = auto()
     ETERNALSHACLES = auto()
     ALTAR = auto()
+    END_TURN = auto()
+    COMBINE_ACTIONS = auto()
     NETHERSWAP = auto()
     LOS_ACTION = auto()
     DETONATION = auto()
     DEBUG_KILL = auto()
-    WISPSPARKS = auto()
-    BONEDUST = auto()
     BONESPARKS = auto()
-    RESPIRIT = auto()
-    SNOWMOTES = auto()
     SUNDIVE = auto()
     METEORSHATTER = auto()
     ARMORCORE = auto()
@@ -36,16 +37,14 @@ class Action(Enum):
     HOARFROST = auto()
     RAPID_GROWTH = auto()
     SUBLIMESTRUCTURE = auto()
-    SWIFTARROW = auto()
-    ALIGNMENT_LANCE = auto()
-
+    BLESSING = auto()
 
 
 action_name_dict = {
     Action.END_TURN: "End Turn",
     Action.COMBINE_ACTIONS: "Action Combination",
     Action.INVALID_ACTION: "Invalid action",
-    Action.IDLE: "Idle",
+    # Action.IDLE: "Idle",
     Action.WRATHSPARK: "Simple Damage",
     Action.GROUNDRAISE: "Ground",
     Action.BLOODDRAWING: "Blood",
@@ -69,7 +68,9 @@ action_name_dict = {
     Action.ICEPOLE: "Icepole",
     Action.OBLIVION: "Oblivion",
     Action.HOARFROST: "Hoarfrost",
-    Action.RAPID_GROWTH: "Rapid Growth"
+    Action.RAPID_GROWTH: "Rapid Growth",
+    Action.SWIFTARROW: "Bow",
+    Action.ALIGNMENT_LANCE: "Lance",
 }
 
 HORIZONTAL_STYLE = False
@@ -86,11 +87,12 @@ def layout(node: TreeNode, max_depth=5):
 
         return
 
-    action_id, target_x, target_y, visits, score, ucb, faction = str.split(node.name, "/")
+    action_id, target_x, target_y, visits, score, policy, faction = str.split(node.name, "/")
+
     action = Action(int(action_id))
 
     def get_exploit(n_score: str, n_visits: str) -> float:
-        return round(float(n_score) / float(n_visits), 2) if float(n_visits) > 0 else 0
+        return round(float(n_score), 5)  # if float(n_visits) > 0 else 0
 
     exploit = get_exploit(score, visits)
 
@@ -105,20 +107,27 @@ def layout(node: TreeNode, max_depth=5):
 
     join_symbol = ' ' if (node.is_leaf() or ((max_depth - node_depth) == 0)) and not HORIZONTAL_STYLE else "\n"
 
+    faction_sign = "P" if faction == "0" else "M"
+
     action_info = join_symbol.join([
-        action_name,
+        f"{faction_sign}: {action_name}",
         action_target,
-        f"v={visits} e={exploit} ucb={ucb}"
+        f"v={visits} e={exploit} policy={policy}"
     ])
 
-    max_ucb_path = True
+    max_policy_path = True
     max_exploit_path = True
     max_visits_path = True
 
     for sis in node.get_sisters():
-        _, _, _, sis_visits, sis_score, sis_ucb, _ = str.split(sis.name, "/")
-        if float(sis_ucb) > float(ucb):
-            max_ucb_path = False
+        try:
+            _, _, _, sis_visits, sis_score, sis_policy, _ = str.split(sis.name, "/")
+        except Exception as e:
+            print(sis.name)
+            raise
+
+        if float(sis_policy) > float(policy):
+            max_policy_path = False
 
         if get_exploit(sis_score, sis_visits) > exploit:
             max_exploit_path = False
@@ -126,12 +135,12 @@ def layout(node: TreeNode, max_depth=5):
         if float(sis_visits) > float(visits):
             max_visits_path = False
 
-    max_ucb_path = node.is_root() or (max_ucb_path and node.get_ancestors()[0].max_ucb_path)
+    max_policy_path = node.is_root() or (max_policy_path and node.get_ancestors()[0].max_policy_path)
     max_exploit_path = node.is_root() or (max_exploit_path and node.get_ancestors()[0].max_exploit_path)
     max_visits_path = node.is_root() or (max_visits_path and node.get_ancestors()[0].max_visits_path)
 
     node.add_features(
-        max_ucb_path=max_ucb_path,
+        max_policy_path=max_policy_path,
         max_exploit_path=max_exploit_path,
         max_visits_path=max_visits_path
     )
@@ -145,7 +154,7 @@ def layout(node: TreeNode, max_depth=5):
         (True, False, True): ("#6a006a", "#ffafff"),  # Purple
         (True, True, False): ("#6a6a00", "#ffffaf"),  # Yellow
         (True, True, True): ("#303030", "#afafaf"),  # Gray (all)
-    }[max_ucb_path, max_exploit_path, max_visits_path]
+    }[max_policy_path, max_exploit_path, max_visits_path]
 
     label_bg_color, label_fg_color = {
         -1: ("#006060", "#00ffff"),  # Undefined (Purple)
@@ -172,7 +181,17 @@ def layout(node: TreeNode, max_depth=5):
         node.img_style["hz_line_type"] = 2
         node.dist += 2.5
 
+    if node.get_ancestors() and not node.get_ancestors()[0].max_exploit_path and not node.get_ancestors()[
+        0].max_visits_path:
+        for child in node.get_children():
+            child.detach()
+        return
+
     add_face_to_node(label, node, 0, position="branch-right")
+
+    # if int(visits) < 2500:
+    #     for child in node.get_children():
+    #         child.detach()
 
 
 ts = TreeStyle()
