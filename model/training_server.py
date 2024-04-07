@@ -1,8 +1,12 @@
 import os
 import socket
 import random
+
+import keras.callbacks
 import numpy as np
 import tensorflow as tf
+
+from player_zero_builder import build_model
 
 # GAME CONF
 BOARD_SIZE = 12
@@ -23,21 +27,22 @@ SIGNAL_NN_TRAINING_START = b"NTS"
 SIGNAL_NN_TRAINING_END = b"NTE"
 SIGNAL_END_OF_STREAM = b"EOS"
 
-
-class LossWriteCallback(tf.keras.callbacks.Callback):
-    def __init__(self):
-        super().__init__()
-
-    def on_epoch_end(self, epoch, logs=None):
-        with open("loss_history.txt", "a") as f:
-            f.write(f"{logs.get('loss')}\n")
-
-
-LOSS_CALLBACK = LossWriteCallback()
+student_network_scale = 2
 
 
 def blue(s):
     return "\033[94m{}\033[00m".format(s)
+
+
+class CustomCallback(tf.keras.callbacks.Callback):
+    def __init__(self, path: str):
+        self.path = path
+        super().__init__()
+
+    def on_epoch_end(self, epoch, logs=None):
+        with open(self.path, "a") as f:
+            f.write(f"{logs.get('loss')},{logs.get('policy_loss')},{logs.get('value_loss')}\n")
+
 
 
 def load_data():
@@ -110,36 +115,75 @@ def load_data():
     policy_stack = np.vstack(policy_list)
     value_stack = np.vstack(value_list)
 
-    print(blue(f"{board_stack.shape=}"))
-    print(blue(f"{policy_mask_stack.shape=}"))
-    print(blue(f"{policy_stack.shape=}"))
-    print(blue(f"{value_stack.shape=}"))
-
     return board_stack, policy_mask_stack, policy_stack, value_stack
 
 
 def load_train_save(generation: int):
+    global student_network_scale
+
+    print(blue('Loading data'))
     board_stack, policy_mask_stack, policy_stack, value_stack = load_data()
-    print(blue('Loading model'))
+
+    print(blue('Loading coach model'))  # TODO use checkpoints instead
     model = tf.keras.models.load_model(f"./player_zero_model_gen{generation - 1}/")
 
-    model.compile(loss=['categorical_crossentropy', 'mean_squared_error'],
-                  optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=['accuracy'])
-
-    print(blue('Training'))
-    _history = model.fit(
+    print(blue('Training coach model'))
+    coach_early_stop = tf.keras.callbacks.EarlyStopping(
+        monitor='loss',
+        min_delta=0.005,
+        patience=5,
+        start_from_epoch=5
+    )
+    model.fit(
         x=[board_stack, policy_mask_stack],
         y=[policy_stack, value_stack],
         batch_size=BATCH_SIZE,
         epochs=TRAINING_EPOCHS,
-        callbacks=LOSS_CALLBACK
+        callbacks=[CustomCallback("training_history.csv"), coach_early_stop]
     )
-    print(blue('Saving model'))
+
+    print(blue('Saving coach model'))
     model_save_path = f"./player_zero_model_gen{generation}/"
     model.save(model_save_path)
-    print(blue('Converting to onnx model'))
-    # tf2onnx.convert(model_save_path, "../gaf6/player_zero.onnx")
+
+    print(blue('Loading student model'))  # TODO use checkpoints instead
+    next_model = tf.keras.models.load_model(f"./player_zero_model_gen{generation - 1}_next/")
+
+    print(blue('Training student model'))
+    next_model.fit(
+        x=[board_stack, policy_mask_stack],
+        y=[policy_stack, value_stack],
+        batch_size=BATCH_SIZE,
+        epochs=TRAINING_EPOCHS,
+        callbacks=[CustomCallback("training_history_next.csv")]
+    )
+
+    print(blue('Saving student model'))
+    next_model_save_path = f"./player_zero_model_gen{generation}_next/"
+    next_model.save(next_model_save_path)
+
+    coach_converged = coach_early_stop.stopped_epoch != 0
+    if coach_converged:
+        student_network_scale += 1
+        print(blue(f'Coach model converged! Scaling up student to {student_network_scale}'))
+        print(blue('Saving student as the new coach model'))
+        model = next_model
+        model.save(model_save_path)
+        print(blue('Building new student'))
+        next_model = build_model(student_network_scale)
+        print(blue('Fitting new student model'))
+        next_model.fit(
+            x=[board_stack, policy_mask_stack],
+            y=[policy_stack, value_stack],
+            batch_size=BATCH_SIZE,
+            epochs=TRAINING_EPOCHS,
+            callbacks=[CustomCallback("training_history_replacement.csv")]
+        )
+        print(blue('Saving new student model'))
+        next_model_save_path = f"./player_zero_model_gen{generation}_next/"
+        next_model.save(next_model_save_path)
+
+    print(blue('Converting coach model to ONNX format'))
     os.system(f"python -m tf2onnx.convert --saved-model {model_save_path} --output ../gaf6/player_zero.onnx")
 
 
@@ -176,6 +220,8 @@ def main():
             print(blue("Self play ended, notify that training is starting..."))
             client_socket.sendall(SIGNAL_NN_TRAINING_START)
             print(blue("Training generation:"), generation)
+            print(blue("Coach NN scale:"), student_network_scale - 1)
+            print(blue("Student NN scale:"), student_network_scale)
             generation += 1
             load_train_save(generation)
             remove_stale_data()
