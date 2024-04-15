@@ -6,8 +6,6 @@
 enum UnitSubscriberIdentifier
 {
     INVALID_SUB = -1,
-    SURFACE_KILL,
-    AMROR, // depricated
     STATUS_BURN,
     STATUS_SLOW,
     STATUS_COUNTDOWN,
@@ -16,7 +14,9 @@ enum UnitSubscriberIdentifier
     STATUS_SPIRITING,
     STATUS_IMMOLATION,
     STATUS_CORE_ARMOR,
-    STATUS_HOARFROST_ARMOR
+    STATUS_HOARFROST_ARMOR,
+    SURFACE_KILL, // special
+    AMROR,        // depricated
 };
 
 class UnitSubscriber

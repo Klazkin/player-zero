@@ -47,8 +47,8 @@ const int PZ_NUM_POLICY = 4320;
 
 struct PZPrediction
 {
-    std::array<float, 1> &value;
-    std::array<float, PZ_NUM_POLICY> &policy;
+    std::array<float, 1> value;
+    std::array<float, PZ_NUM_POLICY> policy;
 };
 
 class PlayerZeroPredictor
@@ -70,7 +70,7 @@ public:
     static void reload_model();
 
     // input space is 12 * 12 * 18, output space is 1 + 12 * 12 * 30,
-    PZPrediction predict(std::array<float, PZ_NUM_BOARD> board_input);
+    void predict(std::array<float, PZ_NUM_BOARD> &board_input, std::array<float, PZ_NUM_POLICY> &mask_input, PZPrediction &prediciton);
 };
 
 #endif

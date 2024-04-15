@@ -412,7 +412,7 @@ std::vector<ActionIdentifier> Unit::get_refill_candidates() const
     return refill_candidates;
 }
 
-void Unit::refill_hand() // TODO use shuffle bag instead? https://docs.godotengine.org/en/stable/tutorials/math/random_number_generation.html
+void Unit::refill_hand()
 {
     if (is_in_deck(ActionIdentifier::TREAD) && !is_in_hand(ActionIdentifier::TREAD))
     {

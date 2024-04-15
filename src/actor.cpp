@@ -212,7 +212,7 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
     MonteCarloTreeSearch mcts(ab->get_root(), max_rollout_turns, perfrom_random_actions_for_turn);
     mcts.run(iterations);
-    draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
+    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
     return ab;
 }
 
@@ -313,9 +313,9 @@ Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> su
 Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations)
 {
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
-    PlayerZeroTreeSearch pzts(ab->get_root(), 1.0);
+    PlayerZeroTreeSearch pzts(ab->get_root(), 1.25);
     pzts.run(iterations);
-    // draw_tree(ab->get_root(), 5, ab->get_root()->caster->get_faction());
-    pzts.test_for_multiple_factions(ab->get_root());
+    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
+    // pzts.test_for_multiple_factions(ab->get_root());
     return ab;
 }

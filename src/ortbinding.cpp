@@ -202,31 +202,24 @@ PlayerZeroPredictor::~PlayerZeroPredictor()
     Ort::GetApi().ReleaseCUDAProviderOptions(cuda_options);
 }
 
-PZPrediction PlayerZeroPredictor::predict(std::array<float, PZ_NUM_BOARD> board_input)
+void PlayerZeroPredictor::predict(std::array<float, PZ_NUM_BOARD> &board_input, std::array<float, PZ_NUM_POLICY> &mask_input, PZPrediction &prediciton)
 {
-    std::array<float, PZ_NUM_POLICY> policy_mask_input;
-    std::fill(policy_mask_input.begin(), policy_mask_input.end(), 1);
-
-    std::array<float, 1> output_1{};
-    std::array<float, PZ_NUM_POLICY> output_2{};
-
     std::array<int64_t, 2> input_shape_1{1, PZ_NUM_BOARD};
     std::array<int64_t, 2> input_shape_2{1, PZ_NUM_POLICY};
 
     std::array<int64_t, 2> output_shape_1{1, 1};
     std::array<int64_t, 2> output_shape_2{1, PZ_NUM_POLICY};
 
-    const char *input_names[] = {"board_input", "policy_mask_input"};
+    const char *input_names[] = {"board_input", "mask_input"};
     const char *output_names[] = {"value", "policy"};
 
     std::vector<Ort::Value> input_tensors;
     std::vector<Ort::Value> output_tensors;
 
     input_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, board_input.data(), board_input.size(), input_shape_1.data(), input_shape_1.size()));
-    input_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, policy_mask_input.data(), policy_mask_input.size(), input_shape_2.data(), input_shape_2.size()));
-    output_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, output_1.data(), output_1.size(), output_shape_1.data(), output_shape_1.size()));
-    output_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, output_2.data(), output_2.size(), output_shape_2.data(), output_shape_2.size()));
+    input_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, mask_input.data(), mask_input.size(), input_shape_2.data(), input_shape_2.size()));
+    output_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, prediciton.value.data(), prediciton.value.size(), output_shape_1.data(), output_shape_1.size()));
+    output_tensors.push_back(Ort::Value::CreateTensor<float>(memory_info, prediciton.policy.data(), prediciton.policy.size(), output_shape_2.data(), output_shape_2.size()));
 
     session->Run(Ort::RunOptions{nullptr}, input_names, input_tensors.data(), 2, output_names, output_tensors.data(), 2);
-    return {output_1, output_2};
 }

@@ -1,4 +1,5 @@
 #include "tree_action_bundle.h"
+#include <godot_cpp/variant/utility_functions.hpp>
 
 TreeActionBundle::~TreeActionBundle()
 {
@@ -22,9 +23,15 @@ void TreeActionBundle::cast_next()
 
     if (current_node->is_leaf())
     {
-        std::cout << "Critical: TreeActionBundle leaf node.\n";
-        draw_tree(get_root(), 6, get_root()->caster->get_faction());
-        exit(7345);
+        std::cout << "Critical: TreeActionBundle leaf node!!!!!!!!!!!\n";
+        std::ofstream fstream;
+        fstream.open(std::string("tree_7345_" + std::to_string(UtilityFunctions::randi()) + ".graph"), std::ios::app);
+        draw_tree(get_root(), 6, get_root()->caster->get_faction(), fstream);
+        fstream.close();
+
+        // exit(7345);
+        forced_to_finish = true;
+        return;
     }
 
     float best_score = -std::numeric_limits<float>::infinity();
@@ -66,7 +73,10 @@ void TreeActionBundle::cast_next()
                 if (branch->get_action() != INVALID_ACTION)
                 {
                     std::cout << "Not a proper blooddrawing node\n";
-                    draw_tree(get_root(), 10, get_root()->caster->get_faction());
+                    std::ofstream fstream;
+                    fstream.open(std::string("tree_87006_" + std::to_string(UtilityFunctions::randi()) + ".graph"), std::ios::app);
+                    draw_tree(get_root(), 10, get_root()->caster->get_faction(), fstream);
+                    fstream.close();
                     exit(87006);
                 }
 
@@ -77,14 +87,14 @@ void TreeActionBundle::cast_next()
             }
             if (correct_branch == nullptr)
             {
-                std::cout << "BLOODDRAWING BRANCH NOT FOUND\n";
+                // std::cout << "BLOODDRAWING BRANCH NOT FOUND\n";
                 if (is_finished())
                 {
-                    std::cout << "...But it does not matter, the case is finished.";
+                    // std::cout << "...But it does not matter, the case is finished.";
                 }
                 else
                 {
-                    std::cout << "CRITICAL BLOODDRAWING AND NOT LAST TURN.\n";
+                    std::cout << "CRITICAL BLOODDRAWING BRANCH MISSING AND NOT LAST TURN.\n";
                 }
                 return;
             }

@@ -1,22 +1,13 @@
 import os
 import socket
-import random
-
-import keras.callbacks
-import numpy as np
 import tensorflow as tf
 
 from player_zero_builder import build_model
+from player_zero_data import load_ramdisk_data, clear_ramdisk_data, blue
 
-# GAME CONF
-BOARD_SIZE = 12
-ACTIONS = 30
-
-# DATA CONF
-RANDOM_SAMPLES_PER_GAME = 5
+# TRAINING CONF
 TRAINING_EPOCHS = 100
-BATCH_SIZE = 32
-GENERATED_GAME_DATA_PATH = "/mnt/r/"
+BATCH_SIZE = 64
 
 # SERVER CONF
 SERVER_ADDRESS = "127.0.0.1"
@@ -30,10 +21,6 @@ SIGNAL_END_OF_STREAM = b"EOS"
 student_network_scale = 2
 
 
-def blue(s):
-    return "\033[94m{}\033[00m".format(s)
-
-
 class CustomCallback(tf.keras.callbacks.Callback):
     def __init__(self, path: str):
         self.path = path
@@ -44,114 +31,48 @@ class CustomCallback(tf.keras.callbacks.Callback):
             f.write(f"{logs.get('loss')},{logs.get('policy_loss')},{logs.get('value_loss')}\n")
 
 
-
-def load_data():
-    def load_sel_play_data(filepath: str):
-        game_board_list = []
-        game_policy_mask_list = []
-        game_policy_list = []
-        game_turn_factions = []
-
-        winner: float
-        with open(filepath, 'r') as f:
-            while True:
-                board = np.zeros(shape=(2592,), dtype=float)
-                # BOARD_SIZE * BOARD_SIZE * (FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES))
-                policy = np.zeros(shape=(4320,), dtype=float)
-                policy_mask = np.zeros(shape=(4320,), dtype=float)
-                # BOARD_SIZE * BOARD_SIZE * ACTION
-                current_faction = None
-
-                num_units = int(f.readline())
-                for _ in range(num_units):
-                    element_data = np.fromstring(f.readline(), dtype=float, sep=',')
-                    element_index = round(element_data[0] * BOARD_SIZE + element_data[1]) * 18
-                    board[element_index: element_index + len(element_data) - 2] = element_data[2:]
-
-                    if element_data[5] == 1.0:
-                        current_faction = 1.0 if element_data[3] == 1.0 else -1.0
-
-                num_actions = int(f.readline())
-                for _ in range(num_actions):
-                    action_data = np.fromstring(f.readline(), dtype=float, sep=',')
-                    action_index = round(action_data[0] * BOARD_SIZE + action_data[1]) * ACTIONS + round(action_data[2])
-                    policy[action_index] = action_data[4]
-                    policy_mask[action_index] = 1.0
-
-                if num_actions == num_units == 0:
-                    winner = float(f.readline())
-                    break
-
-                game_board_list.append(board)
-                game_policy_mask_list.append(policy_mask)
-                game_policy_list.append(policy)
-                game_turn_factions.append(current_faction)
-
-        game_iterator = zip(game_board_list, game_policy_mask_list, game_policy_list, game_turn_factions) \
-            if len(game_turn_factions) <= RANDOM_SAMPLES_PER_GAME \
-            else random.sample(list(zip(game_board_list, game_policy_mask_list, game_policy_list, game_turn_factions)),
-                               k=RANDOM_SAMPLES_PER_GAME)
-
-        for board, policy_mask, policy, turn_faction in game_iterator:
-            if turn_faction is None:
-                print(blue("No current unit on board?"))
-
-            board_list.append(board)
-            policy_mask_list.append(policy_mask)
-            policy_list.append(policy)
-            value_list.append(turn_faction * winner)
-
-    board_list = []
-    policy_mask_list = []
-    policy_list = []
-    value_list = []
-
-    for file in os.listdir(GENERATED_GAME_DATA_PATH):
-        if file.startswith("sim_"):
-            load_sel_play_data(GENERATED_GAME_DATA_PATH + file)
-
-    board_stack = np.vstack(board_list)
-    policy_mask_stack = np.vstack(policy_mask_list)
-    policy_stack = np.vstack(policy_list)
-    value_stack = np.vstack(value_list)
-
-    return board_stack, policy_mask_stack, policy_stack, value_stack
-
-
 def load_train_save(generation: int):
     global student_network_scale
 
     print(blue('Loading data'))
-    board_stack, policy_mask_stack, policy_stack, value_stack = load_data()
+    board_stack, mask_stack, policy_stack, value_stack = load_ramdisk_data()
+    print(f"{board_stack.shape=}")
+    print(f"{mask_stack.shape=}")
+    print(f"{policy_stack.shape=}")
+    print(f"{value_stack.shape=}")
 
-    print(blue('Loading coach model'))  # TODO use checkpoints instead
+    print(blue('Loading coach model'))
     model = tf.keras.models.load_model(f"./player_zero_model_gen{generation - 1}/")
 
     print(blue('Training coach model'))
     coach_early_stop = tf.keras.callbacks.EarlyStopping(
         monitor='loss',
-        min_delta=0.005,
-        patience=5,
-        start_from_epoch=5
+        patience=70,  # TODO lower to 7
+        start_from_epoch=5,
+        min_delta=0.0002
     )
-    model.fit(
-        x=[board_stack, policy_mask_stack],
+
+    build_model(2).fit(  # TODO fix
+        x=[board_stack, mask_stack],
         y=[policy_stack, value_stack],
         batch_size=BATCH_SIZE,
         epochs=TRAINING_EPOCHS,
         callbacks=[CustomCallback("training_history.csv"), coach_early_stop]
     )
 
+    model.save("./dummy_data_model/")
+    exit(1)
+
     print(blue('Saving coach model'))
     model_save_path = f"./player_zero_model_gen{generation}/"
     model.save(model_save_path)
 
-    print(blue('Loading student model'))  # TODO use checkpoints instead
+    print(blue('Loading student model'))
     next_model = tf.keras.models.load_model(f"./player_zero_model_gen{generation - 1}_next/")
 
     print(blue('Training student model'))
     next_model.fit(
-        x=[board_stack, policy_mask_stack],
+        x=[board_stack, mask_stack],
         y=[policy_stack, value_stack],
         batch_size=BATCH_SIZE,
         epochs=TRAINING_EPOCHS,
@@ -173,7 +94,7 @@ def load_train_save(generation: int):
         next_model = build_model(student_network_scale)
         print(blue('Fitting new student model'))
         next_model.fit(
-            x=[board_stack, policy_mask_stack],
+            x=[board_stack, mask_stack],
             y=[policy_stack, value_stack],
             batch_size=BATCH_SIZE,
             epochs=TRAINING_EPOCHS,
@@ -185,12 +106,6 @@ def load_train_save(generation: int):
 
     print(blue('Converting coach model to ONNX format'))
     os.system(f"python -m tf2onnx.convert --saved-model {model_save_path} --output ../gaf6/player_zero.onnx")
-
-
-def remove_stale_data():
-    for file in os.listdir(GENERATED_GAME_DATA_PATH):
-        if file.startswith("sim_"):
-            os.remove(GENERATED_GAME_DATA_PATH + file)
 
 
 def main():
@@ -224,7 +139,7 @@ def main():
             print(blue("Student NN scale:"), student_network_scale)
             generation += 1
             load_train_save(generation)
-            remove_stale_data()
+            clear_ramdisk_data()
             print(blue("NN training finished..."))
             client_socket.sendall(SIGNAL_NN_TRAINING_END)
             continue
@@ -240,4 +155,30 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    load_train_save(1)
+
+    # import tensorflow as tf
+    # import numpy as np
+    #
+    # input_layer = tf.keras.layers.Input(shape=(10,))
+    # mask_layer = tf.keras.layers.Input(shape=(5,))
+    #
+    # x = tf.keras.layers.Dense(64, activation='relu', )(input_layer)
+    # x = tf.keras.layers.Dense(32, activation='relu')(x)
+    # x = tf.keras.layers.Dense(5)(x)
+    # x = tf.keras.layers.Softmax()(x)
+    #
+    # model = tf.keras.models.Model(inputs=[input_layer, mask_layer], outputs=x)
+    # model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    #
+    # model.summary()
+    #
+    # X_train = [
+    #     np.random.rand(1000, 10),
+    #     np.array([np.array([1.0, 0.0, 1.0, 1.0, 0.0]) for _ in range(1000)])
+    # ]  # Example input data with 1000 samples and 10 features
+    #
+    # y_train = np.random.randint(0, 5, size=(1000,))
+    # y_train_one_hot = tf.keras.utils.to_categorical(y_train, num_classes=5)
+    # model.fit(X_train, y_train_one_hot, epochs=10, batch_size=32, validation_split=0.2)

@@ -1,5 +1,7 @@
 #include "monte_carlo.h"
 #include "status.h"
+#include <iostream>
+#include <fstream>
 
 Node::~Node()
 {
@@ -504,10 +506,8 @@ void serialize_tree_to_stream(const Node *node, std::ofstream &to_file, const in
     }
 }
 
-std::array<float, 2592> convert_to_board(Ref<Surface> surface, const Vector2i &current_caster_position)
+void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &arr) // TODO write to arr vector instead
 {
-    std::array<float, 2592> arr = {};
-
     for (auto key_val_pair : surface->get_element_positions())
     {
         auto position = key_val_pair.first;
@@ -535,7 +535,7 @@ std::array<float, 2592> convert_to_board(Ref<Surface> surface, const Vector2i &c
         arr[arr_index + 7] = unit->get_base_attack();
         arr[arr_index + 8] = unit->get_base_defence();
         // statueses [9]
-        int s = 0;
+        int s = 1;
         for (auto status : status_pool)
         {
             if (status == STATUS_CORE_ARMOR && unit->has_subscriber(STATUS_CORE_ARMOR))
@@ -547,43 +547,42 @@ std::array<float, 2592> convert_to_board(Ref<Surface> surface, const Vector2i &c
                 }
             }
 
-            arr[arr_index + 8 + s++] = unit->get_subscriber_duration(status);
+            arr[arr_index + 8 + s] = unit->get_subscriber_duration(status);
+            s++;
         }
     }
-
-    return arr;
 }
 
-void draw_tree(Node *node, int depth, Faction root_faction)
+void draw_tree(Node *node, int depth, Faction root_faction, std::ofstream &fstream)
 {
     if (!node->is_leaf() && depth > 0)
     {
-        std::cout << "(";
+        fstream << "(";
         bool is_first = true;
         for (auto child : node->children)
         {
             if (!is_first)
             {
-                std::cout << ",";
+                fstream << ",";
             }
-            draw_tree(child, depth - 1, root_faction);
+            draw_tree(child, depth - 1, root_faction, fstream);
             is_first = false;
         }
-        std::cout << ")";
+        fstream << ")";
     }
 
-    std::cout << node->get_action() << "/"
-              << node->get_target().x << "/"
-              << node->get_target().y << "/"
-              << node->visits << "/"
-              << node->score << "/"
-              << node->policy << "/"
-              << (node->caster == nullptr
-                      ? UNDEFINED
-                      : node->caster->get_faction());
+    fstream << node->get_action() << "/"
+            << node->get_target().x << "/"
+            << node->get_target().y << "/"
+            << node->visits << "/"
+            << node->score << "/"
+            << node->policy << "/"
+            << (node->caster == nullptr
+                    ? UNDEFINED
+                    : node->caster->get_faction());
     if (node->parent == nullptr) // is root.
     {
-        std::cout << ";\n";
+        fstream << ";\n";
     }
 }
 
@@ -683,11 +682,26 @@ expand:
     visited = 0?
 */
 
+int get_cast_index(const CastInfo &ci)
+{
+    return (ci.target.x * 12 + ci.target.y) * 30 + ci.action;
+}
+
 Node *PlayerZeroTreeSearch::expand(Node *node)
 {
     if (node->is_terminal())
     {
         return node;
+    }
+
+    if (node->get_action() == END_TURN)
+    {
+        return expand_random(node, false);
+    }
+
+    if (node->get_action() == BLOODDRAWING)
+    {
+        return expand_random(node, true);
     }
 
     Ref<Unit> next_caster = node->surface->turn_get_current_unit(); // should never be a dead unit!!!
@@ -704,84 +718,62 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         return node;
     }
 
-    auto prediction = PlayerZeroPredictor::get()->predict(convert_to_board(node->surface, next_caster->get_position()));
-
-    if (node->get_action() == END_TURN) // new turn starting
-    {
-        for (auto action : next_caster->get_refill_candidates())
-        {
-            if (action == TREAD)
-            {
-                continue;
-            }
-
-            Ref<Surface> surface_clone = node->surface->clone();
-            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
-            next_caster_clone->refill_hand(action);
-
-            Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
-            child->parent = node;
-            child->score = prediction.value[0];
-            node->children.push_back(child);
-        }
-
-        if (node->is_leaf()) // nothing to refill
-        {
-            Ref<Surface> surface_clone = node->surface->clone();
-            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
-            next_caster_clone->refill_hand();
-
-            Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION);
-            child->parent = node;
-            child->score = prediction.value[0];
-            node->children.push_back(child);
-        }
-
-        return node;
-    }
-
-    if (node->get_action() == BLOODDRAWING) // blooddrawing cast, terrible spaghetti
-    {
-        for (auto action : next_caster->get_refill_candidates())
-        {
-            if (action == BLOODDRAWING || action == TREAD)
-            {
-                continue;
-            }
-
-            Ref<Surface> surface_clone = node->surface->clone();
-            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
-            next_caster_clone->refill_hand(action);
-
-            Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
-            child->parent = node;
-            child->score = prediction.value[0];
-            node->children.push_back(child);
-        }
-
-        if (node->is_leaf()) // nothing to refill
-        {
-            Ref<Surface> surface_clone = node->surface->clone();
-            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
-            next_caster_clone->refill_hand(INVALID_ACTION);
-
-            Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION);
-            child->parent = node;
-            child->score = prediction.value[0];
-            node->children.push_back(child);
-        }
-
-        return node;
-    }
-
+    std::array<float, PZ_NUM_POLICY> mask = {};
+    std::array<float, PZ_NUM_BOARD> board = {};
+    PZPrediction prediction;
     std::vector<CastInfo> possible_casts;
 
     for (auto action : next_caster->get_hand_set())
     {
-        for (auto generated_cast : Action::generate_action_casts({action, node->surface, next_caster, Vector2i()}))
+        for (auto ci : Action::generate_action_casts({action, node->surface, next_caster, Vector2i()}))
         {
-            possible_casts.push_back(generated_cast);
+            possible_casts.push_back(ci);
+            mask[get_cast_index(ci)] = 1.0;
         }
+    }
+
+    populate_board_array(node->surface, next_caster->get_position(), board);
+    PlayerZeroPredictor::get()->predict(board, mask, prediction);
+
+    float policy_sum = 0;
+    for (auto ci : possible_casts)
+    {
+        policy_sum += prediction.policy[get_cast_index(ci)];
+    }
+
+    if (std::abs(policy_sum - 1.0) > 0.25)
+    {
+        std::cout << "Policy does not add up to 1.0; " << policy_sum << "\n";
+        std::ofstream fstream;
+        fstream.open(std::string("policy_sum_above_1.txt"), std::ios::app);
+        fstream << "Policy sum: " << policy_sum << "\n";
+        fstream << "N Casts: " << possible_casts.size() << "\n";
+        fstream << "Casts: ";
+
+        for (auto c : possible_casts)
+        {
+            fstream << "(action " << c.action << " at " << c.target.x << ":" << c.target.y << "), ";
+        }
+        fstream << "\n";
+
+        serialize_node(fstream, node);
+        fstream << "0\n0\n0\nBoard:\n";
+        for (auto b : board)
+        {
+            fstream << b << ",";
+        }
+        fstream << "\nPolicy:\n";
+        for (auto p : prediction.policy)
+        {
+            fstream << p << ",";
+        }
+        fstream.close();
+        exit(10131);
+    }
+
+    if (prediction.value[0] > 1.01 || prediction.value[0] < -1.01)
+    {
+        std::cout << "Value outside of range; " << prediction.value[0] << "\n";
     }
 
     if (possible_casts.size() == 0)
@@ -793,24 +785,6 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         std::cout << "Zero possible casts!\n";
         exit(10000);
         return node;
-    }
-
-    float policy_sum = 0;
-    for (auto ci : possible_casts) // TODO could be combined with the for loop above
-    {
-        int cast_index = (ci.target.x * 12 + ci.target.y) * ci.action;
-        policy_sum += prediction.policy[cast_index];
-    }
-
-    if (policy_sum <= 0)
-    {
-        std::cout << "All valid actions were masked, using workaround\n";
-        for (auto ci : possible_casts)
-        {
-            int cast_index = (ci.target.x * 12 + ci.target.y) * ci.action;
-            prediction.policy[cast_index] = 1.0;
-        }
-        policy_sum = possible_casts.size();
     }
 
     for (auto ci : possible_casts)
@@ -830,10 +804,27 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
             Action::_cast_action(clone_cast);
             Node *newNode = new ActionCastNode(ci.action, surface_clone, next_caster_clone, clone_cast.target);
 
-            float action_policy = prediction.policy[(ci.target.x * 12 + ci.target.y) * ci.action] / policy_sum;
-            if (action_policy > 1.1)
+            float action_policy = prediction.policy[get_cast_index(ci)];
+            if (action_policy >= 1.01 || action_policy < 0.0)
             {
-                std::cout << "large policy of " << action_policy << "!";
+                std::cout << "action_policy of " << action_policy << "! sum: " << policy_sum << "\n";
+                std::ofstream fstream;
+                fstream.open(std::string("board_input_large_policy.txt"), std::ios::app);
+                fstream << "Policy: " << action_policy << "\n";
+                fstream << "Action: " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "\n";
+                serialize_node(fstream, node);
+                fstream << "0\n0\n0\nBoard:\n";
+                for (auto b : board)
+                {
+                    fstream << b << ",";
+                }
+                fstream << "\nPolicy:\n";
+                for (auto p : prediction.policy)
+                {
+                    fstream << p << ",";
+                }
+                fstream.close();
+                exit(10132);
             }
             newNode->parent = node;
             newNode->policy = action_policy;
@@ -848,6 +839,51 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
     }
 
     return node; // return root node
+}
+
+Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
+{
+    Ref<Unit> next_caster = node->surface->turn_get_current_unit();
+    std::array<float, PZ_NUM_POLICY> empty_mask = {};
+    std::array<float, PZ_NUM_BOARD> board = {};
+    PZPrediction prediction;
+
+    populate_board_array(node->surface, next_caster->get_position(), board);
+    PlayerZeroPredictor::get()->predict(board, empty_mask, prediction);
+
+    float score_multipler = node->caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
+    float score = score_multipler * prediction.value[0];
+
+    for (auto action : next_caster->get_refill_candidates())
+    {
+        if ((from_blooddrawing && action == BLOODDRAWING) || action == TREAD)
+        {
+            continue;
+        }
+
+        Ref<Surface> surface_clone = node->surface->clone();
+        Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
+        next_caster_clone->refill_hand(action);
+
+        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
+        child->parent = node;
+        child->score = score;
+        node->children.push_back(child);
+    }
+
+    if (node->is_leaf()) // nothing to refill, add empty refill node
+    {
+        Ref<Surface> surface_clone = node->surface->clone();
+        Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
+        next_caster_clone->refill_hand(INVALID_ACTION);
+
+        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION);
+        child->parent = node;
+        child->score = score;
+        node->children.push_back(child);
+    }
+
+    return node;
 }
 
 /*
@@ -919,7 +955,6 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node)
                 << unit->get_base_attack() << ','
                 << unit->get_base_defence();
 
-        int s = 0;
         for (auto status : status_pool)
         {
             to_file << ',';
@@ -954,6 +989,26 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node)
                 << child->policy << ','
                 << (child->score + 1) / score_sum << ','
                 << child->visits << '\n';
+    }
+
+    for (auto child : node->children)
+    {
+        if (child->get_action() == INVALID_ACTION || child->get_action() == END_TURN || child->get_action() == BLOODDRAWING)
+        {
+            continue;
+        }
+
+        if (child->visits <= 250 || child->is_terminal())
+        {
+            continue;
+        }
+
+        if (child->caster->get_faction() != node->caster->get_faction())
+        {
+            continue;
+        }
+
+        serialize_node(to_file, child);
     }
 }
 

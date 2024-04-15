@@ -92,7 +92,7 @@ public:
 void serialize_unit(std::vector<float> &vec, Ref<Unit> unit);
 std::vector<float> serialize_cast(CastInfo cast);
 std::vector<float> serialize_state(Ref<Surface> surface);
-void draw_tree(Node *node, int depth, Faction root_faction);
+void draw_tree(Node *node, int depth, Faction root_faction, std::ofstream &fstream);
 void serialize_tree_to_stream(const Node *node, std::ofstream &to_file, const int visits_threshold);
 
 class WinPredictorTreeSearch : public MonteCarloTreeSearch
@@ -108,7 +108,7 @@ public:
     float calculate_surface_score(Ref<Surface> surface) const override;
 };
 
-std::array<float, 2592> convert_to_board(Ref<Surface> surface, const Vector2i &current_caster_position);
+void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &board);
 
 class PlayerZeroTreeSearch : public MonteCarloTreeSearch
 {
@@ -126,6 +126,7 @@ public:
     float selection_policy(Node *node, Faction root_faction) const override;
     float calculate_surface_score(Ref<Surface> surface) const override;
     Node *expand(Node *node) override;
+    Node *expand_random(Node *node, bool from_blooddrawing);
     float simulate(Node *node) override;
     void backpropagate(Node *node, const float score) override;
 
