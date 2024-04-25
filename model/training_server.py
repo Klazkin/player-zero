@@ -1,13 +1,16 @@
 import os
 import socket
+
+import keras
+import numpy as np
 import tensorflow as tf
 
 from player_zero_builder import build_model
 from player_zero_data import load_ramdisk_data, clear_ramdisk_data, blue
 
 # TRAINING CONF
-TRAINING_EPOCHS = 100
-BATCH_SIZE = 64
+TRAINING_EPOCHS = 200
+BATCH_SIZE = 256
 
 # SERVER CONF
 SERVER_ADDRESS = "127.0.0.1"
@@ -28,7 +31,8 @@ class CustomCallback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         with open(self.path, "a") as f:
-            f.write(f"{logs.get('loss')},{logs.get('policy_loss')},{logs.get('value_loss')}\n")
+            l = lambda s: logs.get(s)
+            f.write(f"{l('loss')},{l('policy_loss')},{l('value_loss')},{l('policy_accuracy')},{l('value_accuracy')}\n")
 
 
 def load_train_save(generation: int):
@@ -46,22 +50,19 @@ def load_train_save(generation: int):
 
     print(blue('Training coach model'))
     coach_early_stop = tf.keras.callbacks.EarlyStopping(
-        monitor='loss',
-        patience=70,  # TODO lower to 7
+        monitor='policy_accuracy',
+        patience=50,
         start_from_epoch=5,
         min_delta=0.0002
     )
 
-    build_model(2).fit(  # TODO fix
+    model.fit(
         x=[board_stack, mask_stack],
         y=[policy_stack, value_stack],
         batch_size=BATCH_SIZE,
         epochs=TRAINING_EPOCHS,
         callbacks=[CustomCallback("training_history.csv"), coach_early_stop]
     )
-
-    model.save("./dummy_data_model/")
-    exit(1)
 
     print(blue('Saving coach model'))
     model_save_path = f"./player_zero_model_gen{generation}/"
@@ -113,11 +114,18 @@ def main():
     server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
     server_socket.listen()
 
+    generation = input(blue("Enter Last trained generation (0 - default):"))
+
+    try:
+        generation = int(generation)
+    except ValueError as _:
+        generation = 0
+    finally:
+        print("Generation set to:", generation)
+
     print(blue("Awaiting connection on {}:{}".format(SERVER_ADDRESS, SERVER_PORT)))
     client_socket, client_address = server_socket.accept()
     print(blue("Linked with"), client_address)
-
-    generation = 0
 
     while True:
         data = client_socket.recv(3)
@@ -134,10 +142,12 @@ def main():
         if data == SIGNAL_SELF_PLAY_END:
             print(blue("Self play ended, notify that training is starting..."))
             client_socket.sendall(SIGNAL_NN_TRAINING_START)
+
+            generation += 1
             print(blue("Training generation:"), generation)
             print(blue("Coach NN scale:"), student_network_scale - 1)
             print(blue("Student NN scale:"), student_network_scale)
-            generation += 1
+
             load_train_save(generation)
             clear_ramdisk_data()
             print(blue("NN training finished..."))
@@ -154,9 +164,34 @@ def main():
     client_socket.close()
 
 
+def test_training():
+    print(blue('Test training...'))
+    print(blue('Loading data'))
+    board_stack, mask_stack, policy_stack, value_stack = load_ramdisk_data(use_random_samples=False)
+    print(f"{board_stack.shape=}, {np.any(np.isnan(board_stack))=}")
+    print(f"{mask_stack.shape=}, {np.any(np.isnan(mask_stack))=}")
+    print(f"{policy_stack.shape=}, {np.any(np.isnan(policy_stack))=}")
+    print(f"{value_stack.shape=}, {np.any(np.isnan(value_stack))=}")
+
+    exit(1)
+
+    print(blue('Training model'))
+    model: keras.Model = tf.keras.models.load_model(f"./player_zero_model_gen1_next/")
+    # model.optimizer.learning_rate = 0.0001
+    # model.optimizer.clipnorm = 1.0
+    model.fit(
+        x=[board_stack, mask_stack],
+        y=[policy_stack, value_stack],
+        batch_size=BATCH_SIZE,
+        epochs=TRAINING_EPOCHS,
+    )
+
+
 if __name__ == '__main__':
-    # main()
-    load_train_save(1)
+    main()
+    # student_network_scale = 5
+    # load_train_save(8)
+    # test_training()
 
     # import tensorflow as tf
     # import numpy as np

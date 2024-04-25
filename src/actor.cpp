@@ -313,9 +313,11 @@ Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> su
 Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations)
 {
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
-    PlayerZeroTreeSearch pzts(ab->get_root(), 1.25);
+    PlayerZeroTreeSearch pzts(ab->get_root(), 1.0);
     pzts.run(iterations);
-    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
-    // pzts.test_for_multiple_factions(ab->get_root());
+    // ofstream data_file_stream;
+    // data_file_stream.open(std::string("asd.graph"), std::ios::app);
+    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction(), data_file_stream);
+    // data_file_stream.close();
     return ab;
 }

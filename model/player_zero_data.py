@@ -69,15 +69,12 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
         else random.sample(list(zipped_instance_lists), k=RANDOM_SAMPLES_PER_GAME)
 
     for board, mask, policy, turn_faction in instance_iterator:
-        if turn_faction is None:
-            print(blue("ERROR: No current unit on board?"))
+        if turn_faction is None or turn_faction == F_UNDEFINED:
+            print(blue("ERROR: No current unit on board?"), turn_faction)
 
         board_list.append(board)
         mask_list.append(mask)
         policy_list.append(policy)
-
-        if turn_faction is None or turn_faction == F_UNDEFINED:
-            print(blue("ERROR: Invalid Current Faction"), turn_faction)
 
         value: float
         if winning_faction == F_UNDEFINED:
@@ -87,10 +84,16 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
         else:
             value = -1.0
 
+        # value = 0.0
+        #         if turn_faction == F_MONSTER:
+        #             value = -1.0
+        #         if turn_faction == F_PLAYER:
+        #             value = 1.0
+
         value_list.append(value)
 
 
-def load_ramdisk_data():
+def load_ramdisk_data(use_random_samples=True):
     board_list = []
     mask_list = []
     policy_list = []
@@ -101,6 +104,7 @@ def load_ramdisk_data():
             load_single_datapoint(
                 board_list, mask_list, policy_list, value_list,
                 filepath=GENERATED_GAME_DATA_PATH + file,
+                use_random_samples=use_random_samples
             )
 
     board_stack = np.vstack(board_list)

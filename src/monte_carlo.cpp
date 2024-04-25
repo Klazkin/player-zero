@@ -756,7 +756,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         }
         fstream << "\n";
 
-        serialize_node(fstream, node);
+        serialize_node(fstream, node, root->caster->get_faction());
         fstream << "0\n0\n0\nBoard:\n";
         for (auto b : board)
         {
@@ -812,7 +812,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
                 fstream.open(std::string("board_input_large_policy.txt"), std::ios::app);
                 fstream << "Policy: " << action_policy << "\n";
                 fstream << "Action: " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "\n";
-                serialize_node(fstream, node);
+                serialize_node(fstream, node, root->caster->get_faction());
                 fstream << "0\n0\n0\nBoard:\n";
                 for (auto b : board)
                 {
@@ -928,7 +928,12 @@ void PlayerZeroTreeSearch::backpropagate(Node *node, const float score)
     }
 }
 
-void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node)
+float clamp_score(float score)
+{
+    return std::clamp(score, -0.99999f, 0.99999f);
+}
+
+void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction)
 {
     to_file << node->surface->get_element_positions().size() << '\n';
 
@@ -976,19 +981,45 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node)
     to_file << node->children.size() << '\n';
 
     float score_sum = 0;
+    float score_multiplier = node->caster->get_faction() == root_faction ? 1.0 : -1.0;
+
     for (auto child : node->children)
     {
-        score_sum += child->score + 1;
+        score_sum += clamp_score(child->score) * score_multiplier + 1;
+    }
+
+    if (score_sum == 0)
+    {
+        std::cout << "ERR: exp_sum == 0\n";
     }
 
     for (auto child : node->children)
     {
+        // see comment above to explain the clamp
+        float policy = (clamp_score(child->score) * score_multiplier + 1) / score_sum;
+
+        if (std::isnan(policy) || policy < 0 || policy > 1)
+        {
+            std::cout << "ERR: true_action_policy is invalid: ";
+            std::cout << child->get_target().x << ','
+                      << child->get_target().y << ','
+                      << child->get_action() << ','
+                      << child->policy << ','
+                      << policy << ','
+                      << child->visits << ','
+                      << child->score << '\n';
+
+            policy = 1.0 / node->children.size();
+            std::cout << " failsafe policy: " << policy << "\n";
+        }
+
         to_file << child->get_target().x << ','
                 << child->get_target().y << ','
                 << child->get_action() << ','
                 << child->policy << ','
-                << (child->score + 1) / score_sum << ','
-                << child->visits << '\n';
+                << policy << ','
+                << child->visits << ','
+                << child->score << '\n';
     }
 
     for (auto child : node->children)
@@ -1008,7 +1039,7 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node)
             continue;
         }
 
-        serialize_node(to_file, child);
+        serialize_node(to_file, child, root_faction);
     }
 }
 
