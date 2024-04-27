@@ -10,7 +10,7 @@ from player_zero_data import load_ramdisk_data, clear_ramdisk_data, blue
 
 # TRAINING CONF
 TRAINING_EPOCHS = 200
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 
 # SERVER CONF
 SERVER_ADDRESS = "127.0.0.1"
@@ -50,8 +50,8 @@ def load_train_save(generation: int):
 
     print(blue('Training coach model'))
     coach_early_stop = tf.keras.callbacks.EarlyStopping(
-        monitor='policy_accuracy',
-        patience=50,
+        monitor='loss',
+        patience=25,
         start_from_epoch=5,
         min_delta=0.0002
     )
@@ -190,8 +190,7 @@ def test_training():
 if __name__ == '__main__':
     main()
     # student_network_scale = 5
-    # load_train_save(8)
-    # test_training()
+    # load_train_save(1)
 
     # import tensorflow as tf
     # import numpy as np

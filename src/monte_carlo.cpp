@@ -506,13 +506,13 @@ void serialize_tree_to_stream(const Node *node, std::ofstream &to_file, const in
     }
 }
 
-void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &arr) // TODO write to arr vector instead
+void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &arr)
 {
     for (auto key_val_pair : surface->get_element_positions())
     {
         auto position = key_val_pair.first;
         auto element = key_val_pair.second;
-        int arr_index = (position.x * 12 + position.y) * 18;
+        int arr_index = (position.x * 12 + position.y) * (18 + 30 * 2);
 
         if (!element->is_unit())
         {
@@ -534,7 +534,7 @@ void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_p
         arr[arr_index + 6] = unit->get_base_speed();
         arr[arr_index + 7] = unit->get_base_attack();
         arr[arr_index + 8] = unit->get_base_defence();
-        // statueses [9]
+        // statueses [9 - 18]
         int s = 1;
         for (auto status : status_pool)
         {
@@ -549,6 +549,18 @@ void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_p
 
             arr[arr_index + 8 + s] = unit->get_subscriber_duration(status);
             s++;
+        }
+
+        // hand
+        for (size_t i = 0; i < 30; i++)
+        {
+            arr[arr_index + 18 + i] = unit->is_in_hand(static_cast<ActionIdentifier>(i));
+        }
+
+        // deck
+        for (size_t i = 0; i < 30; i++)
+        {
+            arr[arr_index + 18 + 30 + i] = unit->is_in_deck(static_cast<ActionIdentifier>(i));
         }
     }
 }
@@ -691,6 +703,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
 {
     if (node->is_terminal())
     {
+        node->score = calculate_surface_score(node->surface);
         return node;
     }
 
@@ -750,13 +763,13 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         fstream << "N Casts: " << possible_casts.size() << "\n";
         fstream << "Casts: ";
 
-        for (auto c : possible_casts)
+        for (auto ci : possible_casts)
         {
-            fstream << "(action " << c.action << " at " << c.target.x << ":" << c.target.y << "), ";
+            fstream << "(action " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "), ";
         }
         fstream << "\n";
 
-        serialize_node(fstream, node, root->caster->get_faction());
+        serialize_node(fstream, node, root->caster->get_faction(), true);
         fstream << "0\n0\n0\nBoard:\n";
         for (auto b : board)
         {
@@ -778,7 +791,6 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
 
     if (possible_casts.size() == 0)
     {
-
         std::cout << "Hand size: " << next_caster->get_hand_set().size() << "\n";
         std::cout << "Deck size: " << next_caster->get_deck().size() << "\n";
         std::cout << "Refill Candidates size: " << next_caster->get_refill_candidates().size() << "\n";
@@ -802,7 +814,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         if (Action::_is_castable(clone_cast))
         {
             Action::_cast_action(clone_cast);
-            Node *newNode = new ActionCastNode(ci.action, surface_clone, next_caster_clone, clone_cast.target);
+            Node *new_node = new ActionCastNode(ci.action, surface_clone, next_caster_clone, clone_cast.target);
 
             float action_policy = prediction.policy[get_cast_index(ci)];
             if (action_policy >= 1.01 || action_policy < 0.0)
@@ -812,7 +824,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
                 fstream.open(std::string("board_input_large_policy.txt"), std::ios::app);
                 fstream << "Policy: " << action_policy << "\n";
                 fstream << "Action: " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "\n";
-                serialize_node(fstream, node, root->caster->get_faction());
+                serialize_node(fstream, node, root->caster->get_faction(), false);
                 fstream << "0\n0\n0\nBoard:\n";
                 for (auto b : board)
                 {
@@ -826,11 +838,10 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
                 fstream.close();
                 exit(10132);
             }
-            newNode->parent = node;
-            newNode->policy = action_policy;
-            float score_multipler = node->caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
-            newNode->score = score_multipler * prediction.value[0];
-            node->children.push_back(newNode);
+            new_node->parent = node;
+            new_node->policy = action_policy;
+            new_node->score = 0.0; // score initialized at 0.0
+            node->children.push_back(new_node);
         }
         else
         {
@@ -838,7 +849,9 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         }
     }
 
-    return node; // return root node
+    float score_multipler = next_caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
+    node->score = score_multipler * prediction.value[0];
+    return node; // return expanded node
 }
 
 Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
@@ -850,9 +863,6 @@ Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
 
     populate_board_array(node->surface, next_caster->get_position(), board);
     PlayerZeroPredictor::get()->predict(board, empty_mask, prediction);
-
-    float score_multipler = node->caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
-    float score = score_multipler * prediction.value[0];
 
     for (auto action : next_caster->get_refill_candidates())
     {
@@ -867,7 +877,7 @@ Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
 
         Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
         child->parent = node;
-        child->score = score;
+        child->score = 0.0;
         node->children.push_back(child);
     }
 
@@ -879,10 +889,12 @@ Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
 
         Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION);
         child->parent = node;
-        child->score = score;
+        child->score = 0.0;
         node->children.push_back(child);
     }
 
+    float score_multipler = next_caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
+    node->score = score_multipler * prediction.value[0];
     return node;
 }
 
@@ -894,13 +906,7 @@ simulate:
 
 float PlayerZeroTreeSearch::simulate(Node *node)
 {
-    if (node->is_terminal())
-    {
-        return calculate_surface_score(node->surface);
-    }
-
-    // float score_multipler = node->caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
-    return node->score; // network prediction, returns score 1.0 for the chance the current unit will win
+    return node->score; // network prediction value (already multiplied by faction score_multiplier) or if terminal the evaluated score
 }
 
 /*
@@ -916,10 +922,9 @@ backpropagate:
 
 void PlayerZeroTreeSearch::backpropagate(Node *node, const float score)
 {
-    float nn_value;
     while (node != nullptr)
     {
-        if (node->visits != 0)
+        if (node->visits > 0)
         {
             node->score = (node->visits * node->score + score) / (node->visits + 1);
         }
@@ -933,7 +938,7 @@ float clamp_score(float score)
     return std::clamp(score, -0.99999f, 0.99999f);
 }
 
-void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction)
+void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate)
 {
     to_file << node->surface->get_element_positions().size() << '\n';
 
@@ -975,6 +980,19 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, co
 
             to_file << unit->get_subscriber_duration(status);
         }
+
+        // hand
+        for (size_t i = 0; i < 30; i++)
+        {
+            to_file << ',' << unit->is_in_hand(static_cast<ActionIdentifier>(i));
+        }
+
+        // deck
+        for (size_t i = 0; i < 30; i++)
+        {
+            to_file << ',' << unit->is_in_deck(static_cast<ActionIdentifier>(i));
+        }
+
         to_file << '\n';
     };
 
@@ -1022,6 +1040,11 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, co
                 << child->score << '\n';
     }
 
+    if (!propagate)
+    {
+        return;
+    }
+
     for (auto child : node->children)
     {
         if (child->get_action() == INVALID_ACTION || child->get_action() == END_TURN || child->get_action() == BLOODDRAWING)
@@ -1039,20 +1062,8 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, co
             continue;
         }
 
-        serialize_node(to_file, child, root_faction);
+        serialize_node(to_file, child, root_faction, true);
     }
-}
-
-void PlayerZeroTreeSearch::serialize_tree(std::ofstream &to_file)
-{
-    // state: x, y, element data
-    // actions: x, y, action data
-    // for every node that is not end_turn
-    // save the node state
-    // save the network policies
-    // save the mcts variables, such as, visits and score (action value)
-
-    // leave room for winner to be added later!!
 }
 
 void PlayerZeroTreeSearch::test_for_multiple_factions(Node *node)

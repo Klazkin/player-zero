@@ -495,15 +495,23 @@ void cast_blooddrawing(const CastInfo &cast)
 
 void cast_meteorshatter(const CastInfo &cast)
 {
-    Ref<SurfaceElement> target = cast.surface->get_element(cast.target);
     const int RADIUS = 3;
-    target->hit(5 + cast.caster->get_attack());
+    const int BASE_DAMAGE = 5;
+    const int AOE_DAMAGE = 7;
+
+    Ref<SurfaceElement> target = cast.surface->get_element(cast.target);
+    target->hit(BASE_DAMAGE + cast.caster->get_attack());
+
+    if (!target->is_dead())
+    {
+        return;
+    }
 
     for (auto key_val_pair : cast.surface->get_element_positions())
     {
         if ((key_val_pair.first - cast.target).length_squared() <= RADIUS * RADIUS)
         {
-            key_val_pair.second->hit(10);
+            key_val_pair.second->hit(AOE_DAMAGE);
         }
     }
 }

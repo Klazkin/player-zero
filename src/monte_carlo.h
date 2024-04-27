@@ -130,9 +130,11 @@ public:
     float simulate(Node *node) override;
     void backpropagate(Node *node, const float score) override;
 
-    static void serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction);
-    void serialize_tree(std::ofstream &to_file);
+    static void serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate);
     void test_for_multiple_factions(Node *node);
 };
+
+// TODO remove from header file
+void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &arr);
 
 #endif

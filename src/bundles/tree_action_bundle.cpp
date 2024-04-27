@@ -115,6 +115,6 @@ void TreeActionBundle::save_data(const String &path)
 {
     ofstream data_file_stream;
     data_file_stream.open(std::string(path.ascii()), std::ios::app);
-    PlayerZeroTreeSearch::serialize_node(data_file_stream, root, root->caster->get_faction());
+    PlayerZeroTreeSearch::serialize_node(data_file_stream, root, root->caster->get_faction(), true);
     data_file_stream.close();
 }

@@ -2,13 +2,16 @@ import os
 import random
 import numpy as np
 from tqdm import tqdm
+from itertools import islice
+from player_zero_builder import PZ_NUM_BOARD, PZ_NUM_POLICY
 
 GENERATED_GAME_DATA_PATH = "/mnt/r/"
 
 # GAME DATA CONF
 BOARD_SIZE = 12
 ACTIONS = 30
-RANDOM_SAMPLES_PER_GAME = 10
+RANDOM_SAMPLES_PER_GAME = 8
+LIMIT_GAMES_TO_LOAD = 25000
 
 
 def blue(s):
@@ -29,17 +32,15 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
 
     with open(filepath, 'r') as f:
         while True:
-            board = np.zeros(shape=(2592,), dtype=float)
-            # BOARD_SIZE * BOARD_SIZE * (FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES))
-            policy = np.zeros(shape=(4320,), dtype=float)
-            mask = np.zeros(shape=(4320,), dtype=float)
-            # BOARD_SIZE * BOARD_SIZE * ACTION
+            board = np.zeros(shape=(PZ_NUM_BOARD,), dtype=float)
+            policy = np.zeros(shape=(PZ_NUM_POLICY,), dtype=float)
+            mask = np.zeros(shape=(PZ_NUM_POLICY,), dtype=float)
             current_faction = None
 
             num_units = int(f.readline())
             for _ in range(num_units):
                 element_data = np.fromstring(f.readline(), dtype=int, sep=',')
-                element_index = (element_data[0] * BOARD_SIZE + element_data[1]) * 18
+                element_index = (element_data[0] * BOARD_SIZE + element_data[1]) * (18 + 30 * 2)
                 board[element_index: element_index + len(element_data) - 2] = element_data[2:]
 
                 if element_data[5] == 1:  # IS_CONTROLLED flag
@@ -84,12 +85,6 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
         else:
             value = -1.0
 
-        # value = 0.0
-        #         if turn_faction == F_MONSTER:
-        #             value = -1.0
-        #         if turn_faction == F_PLAYER:
-        #             value = 1.0
-
         value_list.append(value)
 
 
@@ -99,7 +94,7 @@ def load_ramdisk_data(use_random_samples=True):
     policy_list = []
     value_list = []
 
-    for file in tqdm(os.listdir(GENERATED_GAME_DATA_PATH)):
+    for file in tqdm(islice(os.listdir(GENERATED_GAME_DATA_PATH), LIMIT_GAMES_TO_LOAD)):
         if file.startswith("sim_"):
             load_single_datapoint(
                 board_list, mask_list, policy_list, value_list,

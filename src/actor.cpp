@@ -315,9 +315,29 @@ Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> su
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
     PlayerZeroTreeSearch pzts(ab->get_root(), 1.0);
     pzts.run(iterations);
+
     // ofstream data_file_stream;
-    // data_file_stream.open(std::string("asd.graph"), std::ios::app);
+    // data_file_stream.open(std::string("last_action.graph"), std::ios::app);
     // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction(), data_file_stream);
     // data_file_stream.close();
+
+    // // Verifitcation code for #93
+    // std::array<float, PZ_NUM_BOARD> board_arr = {};
+    // populate_board_array(surface, caster->get_position(), board_arr);
+    // ofstream board_fs;
+    // board_fs.open(std::string("board_fs.txt"), std::ios::app);
+    // for (float b : board_arr)
+    // {
+    //     board_fs << b << " ";
+    // }
+    // board_fs << "\n";
+    // board_fs.close();
+
+    // ofstream node_fs;
+    // node_fs.open(std::string("node_fs.txt"), std::ios::app);
+    // pzts.serialize_node(node_fs, ab->get_root(), ab->get_root()->caster->get_faction(), false);
+    // node_fs << "\n";
+    // node_fs.close();
+
     return ab;
 }

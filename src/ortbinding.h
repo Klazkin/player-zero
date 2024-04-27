@@ -42,8 +42,8 @@ public:
     std::array<float, 2> predict(std::array<float, 96> input);
 };
 
-const int PZ_NUM_BOARD = 2592;
-const int PZ_NUM_POLICY = 4320;
+const int PZ_NUM_BOARD = 12 * 12 * (18 + 30 * 2);
+const int PZ_NUM_POLICY = 12 * 12 * 30;
 
 struct PZPrediction
 {
@@ -69,7 +69,6 @@ public:
     static PlayerZeroPredictor *get();
     static void reload_model();
 
-    // input space is 12 * 12 * 18, output space is 1 + 12 * 12 * 30,
     void predict(std::array<float, PZ_NUM_BOARD> &board_input, std::array<float, PZ_NUM_POLICY> &mask_input, PZPrediction &prediciton);
 };
 

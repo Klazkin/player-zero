@@ -5,6 +5,10 @@ model/saved_model/
 model/dueler_model/
 model/winner_predictor_model/
 model/.ipynb_checkpoints
+model/legacy*
+model/player_zero_model_gen*
+model/*.csv
+model/dummy_data_model
 .sconsign.dblite
 .vscode
 .idea
@@ -13,3 +17,4 @@ model/.ipynb_checkpoints
 *.data
 thirdparty/*
 *compile_commands.json
+*.pyc
