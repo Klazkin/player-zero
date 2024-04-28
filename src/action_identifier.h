@@ -22,7 +22,7 @@ enum ActionIdentifier
     ETERNALSHACLES,   // 11
     ALTAR,            // 12
     END_TURN,         // 13
-    COMBINE_ACTIONS,  // 24
+    COMBINE_ACTIONS,  // 14
     NETHERSWAP,       // 15
     LOS_ACTION,       // 16
     DETONATION,       // 17

@@ -3,6 +3,7 @@
 #include "monte_carlo.h"
 #include "bundles/tree_action_bundle.h"
 #include "bundles/vector_action_bundle.h"
+#include "bundles/random_action_bundle.h"
 
 #include <algorithm>
 #include <chrono>
@@ -225,79 +226,7 @@ Ref<ActionBundle> Actor::get_actions_from_model(Ref<Unit> caster, Ref<Surface> s
 
 Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> surface)
 {
-    Ref<VectorActionBundle> ab = memnew(VectorActionBundle);
-    Ref<Unit> opponent = nullptr;
-
-    for (auto u : surface->get_only_units_vec())
-    {
-        if (u == caster)
-        {
-            continue;
-        }
-
-        if (opponent == nullptr)
-        {
-            opponent = u;
-            continue;
-        }
-
-        std::cout << "AFM: More than one oppponennt during opponent search.\n";
-    }
-
-    if (surface->turn_get_current_unit() != caster)
-    {
-        UtilityFunctions::printerr("AFM: Not current units turn.");
-        return ab;
-    }
-
-    if (caster->is_dead())
-    {
-        UtilityFunctions::printerr("AFM: Caster dead at the start of random cast.");
-        return ab;
-    }
-
-    Ref<Surface> surface_clone = surface->clone();
-    Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-
-    while (!caster_clone->is_dead()) // if caster kills themselves after cast, cant continue to cast
-    {
-        CastInfo random_cast = {END_TURN, surface_clone, caster_clone, Vector2()};
-        std::vector<CastInfo> candidate_casts;
-        for (auto action : caster_clone->get_hand_set())
-        {
-            std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface_clone, caster_clone, Vector2i()});
-            candidate_casts.insert(candidate_casts.end(), action_casts.begin(), action_casts.end());
-        }
-
-        if (candidate_casts.size() != 0)
-        {
-            int cast_pt = UtilityFunctions::randi_range(0, candidate_casts.size() - 1);
-            if (cast_pt >= candidate_casts.size())
-            {
-                UtilityFunctions::printerr("Critical: Generated random int bigger than candidates list.");
-            }
-
-            random_cast = candidate_casts[cast_pt];
-        }
-
-        if (!Action::_is_castable(random_cast))
-        {
-            std::cout << "Uncastable action in AFM clone (1) candidates.";
-            std::cout << random_cast.action;
-            std::cout << random_cast.target.x << " " << random_cast.target.y;
-            std::cout << caster_clone.is_null() << caster_clone->is_dead() << (caster_clone != surface_clone->turn_get_current_unit()) << "\n";
-            continue;
-        }
-
-        Action::_cast_action(random_cast);
-        ab->push_back_cast({random_cast.action, surface, caster, random_cast.target}); // push cast to original
-
-        if (random_cast.action == END_TURN)
-        {
-            break;
-        }
-    }
-
+    Ref<RandomActionBundle> ab = memnew(RandomActionBundle(surface, caster));
     return ab;
 }
 
