@@ -15,8 +15,8 @@ class Node
 
 public:
     int visits = 0;
-    float score = 0; // action value
-    float policy = 0;
+    float score = 0.0; // action value
+    float policy = 0.0;
     Node *parent = nullptr;
     std::vector<Node *> children;
     Ref<Surface> surface;
@@ -30,6 +30,7 @@ public:
     bool is_terminal() const;
     virtual ActionIdentifier get_action() const;
     virtual Vector2i get_target() const;
+    void add_child(Node *child);
 };
 
 class ActionCastNode : public Node
@@ -54,8 +55,6 @@ public:
 class RandomHandRefillNode : public Node
 {
 public:
-    const ActionIdentifier refilled_action;
-
     RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled);
 };
 
@@ -87,6 +86,7 @@ public:
     virtual float simulate(Node *node);
     virtual void backpropagate(Node *node, const float score);
     void run(const int iterations);
+    Node *expand_random(Node *node, bool from_blooddrawing);
 };
 
 void serialize_unit(std::vector<float> &vec, Ref<Unit> unit);
@@ -115,16 +115,15 @@ class PlayerZeroTreeSearch : public MonteCarloTreeSearch
 
 private:
     float cpuct;
+    std::string model_file;
 
 public:
-    PlayerZeroTreeSearch(
-        Node *p_root,
-        float p_cpuct)
+    PlayerZeroTreeSearch(Node *p_root, float p_cpuct, std::string p_model_file)
         : cpuct(p_cpuct),
+          model_file(p_model_file),
           MonteCarloTreeSearch(p_root, -1, nullptr){};
 
     float selection_policy(Node *node, Faction root_faction) const override;
-    float calculate_surface_score(Ref<Surface> surface) const override;
     Node *expand(Node *node) override;
     Node *expand_random(Node *node, bool from_blooddrawing);
     float simulate(Node *node) override;

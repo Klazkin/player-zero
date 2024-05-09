@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from training_server import TRAINING_EPOCHS
 
-df = pd.read_csv('training_history.csv', header=None)  # replace with .csv
+df = pd.read_csv('training_history_next.csv', header=None)  # replace with .csv
 
 x = df.index
 y1 = df[0]
@@ -27,8 +27,8 @@ for generation in range(len(df) // TRAINING_EPOCHS + 1):
         names = ['_nolegend_'] * 5
 
     plt.plot(x[gen_start:gen_end], y1[gen_start:gen_end], '#1F77B4', label=names[0])
-    plt.plot(x[gen_start:gen_end], y2[gen_start:gen_end], '#FF7F0E', label=names[1])
-    plt.plot(x[gen_start:gen_end], y3[gen_start:gen_end], '#2CA02C', label=names[2])
+    plt.plot(x[gen_start:gen_end], y2[gen_start:gen_end], '#FF7F0E', label=names[1], linestyle='--')
+    plt.plot(x[gen_start:gen_end], y3[gen_start:gen_end], '#2CA02C', label=names[2], linestyle='--')
     plt.plot(x[gen_start:gen_end], y4[gen_start:gen_end], '#3B5287', label=names[3])
     plt.plot(x[gen_start:gen_end], y5[gen_start:gen_end], '#B75C4E', label=names[4])
 

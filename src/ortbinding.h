@@ -54,20 +54,18 @@ struct PZPrediction
 class PlayerZeroPredictor
 {
 private:
-    static PlayerZeroPredictor *instance;
-
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
     Ort::Env env{ORT_LOGGING_LEVEL_INFO, "PlayerZero"};
     OrtCUDAProviderOptionsV2 *cuda_options = nullptr;
     Ort::SessionOptions session_options;
     Ort::Session *session = nullptr;
 
-    PlayerZeroPredictor();
+    PlayerZeroPredictor(const std::string &p_model_file);
     ~PlayerZeroPredictor();
 
 public:
-    static PlayerZeroPredictor *get();
-    static void reload_model();
+    static PlayerZeroPredictor *get(const std::string &p_model_file);
+    static void unload_model(const std::string &p_model_file);
 
     void predict(std::array<float, PZ_NUM_BOARD> &board_input, std::array<float, PZ_NUM_POLICY> &mask_input, PZPrediction &prediciton);
 };

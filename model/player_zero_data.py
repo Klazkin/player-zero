@@ -10,22 +10,36 @@ GENERATED_GAME_DATA_PATH = "/mnt/r/"
 # GAME DATA CONF
 BOARD_SIZE = 12
 ACTIONS = 30
-RANDOM_SAMPLES_PER_GAME = 8
+RANDOM_SAMPLES_PER_GAME = 7
 LIMIT_GAMES_TO_LOAD = 25000
+
+# Factions
+F_UNDEFINED, F_PLAYER, F_MONSTER = -1, 0, 1
+
+EXCLUDE_WITH_LOW_VISITS = False
+ENABLE_H_V_FLIP = True
+LOW_VISITS_THRESHOLD = 5000
+TEMPERATURE = 1.0
 
 
 def blue(s):
     return "\033[94m{}\033[00m".format(s)
 
 
-# Factions
-F_UNDEFINED, F_PLAYER, F_MONSTER = -1, 0, 1
-
-
-def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, value_list: list, filepath: str,
-                          use_random_samples: bool = True):
+def load_single_datapoint(
+        board_list: list,
+        mask_list: list,
+        action_list: list,
+        policy_list: list,
+        value_list: list,
+        filepath: str,
+        use_random_samples: bool = True,
+        use_random_flip: bool = ENABLE_H_V_FLIP,
+        random_samples: int = RANDOM_SAMPLES_PER_GAME
+):
     instance_board_list = []
     instance_mask_list = []
+    instance_action_list = []
     instance_policy_list = []
     instance_turn_factions = []
     winning_faction: float
@@ -33,9 +47,12 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
     with open(filepath, 'r') as f:
         while True:
             board = np.zeros(shape=(PZ_NUM_BOARD,), dtype=float)
-            policy = np.zeros(shape=(PZ_NUM_POLICY,), dtype=float)
             mask = np.zeros(shape=(PZ_NUM_POLICY,), dtype=float)
+            actions = np.zeros(shape=(ACTIONS * 2), dtype=float)
+            policy = np.zeros(shape=(PZ_NUM_POLICY,), dtype=float)
+
             current_faction = None
+            total_num_visits = 0
 
             num_units = int(f.readline())
             for _ in range(num_units):
@@ -46,35 +63,75 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
                 if element_data[5] == 1:  # IS_CONTROLLED flag
                     current_faction = F_PLAYER if element_data[3] == 1 else F_MONSTER  # CHECK F_MONSTER FLAG
 
+                    for i in range(0, ACTIONS * 2):
+                        actions[i] = element_data[i + 18]
+
             num_actions = int(f.readline())
+            actions = []
             for _ in range(num_actions):
                 action_data = np.fromstring(f.readline(), dtype=float, sep=',')
                 action_index = round(action_data[0] * BOARD_SIZE + action_data[1]) * ACTIONS + round(action_data[2])
-                policy[action_index] = action_data[4]
+                # policy[action_index] = action_data[4] # old score based function
                 mask[action_index] = 1.0
+                action_visits = action_data[5]
+                total_num_visits += action_visits
+                actions.append((action_index, action_visits))
+
+            # based on code from https://github.com/suragnair/alpha-zero-general/blob/master/MCTS.py#L28
+            actions = [(i, v ** (1.0 / TEMPERATURE)) for i, v in actions]
+            visits_sum = float(sum(map(lambda a: a[1], actions)))
+            for index, visits in actions:
+                policy[index] = visits / visits_sum
 
             if num_actions == num_units == 0:
                 winning_faction = int(f.readline())
                 if f.readline():
                     print(blue("ERROR: Not at end of file"))
                 break
+            elif num_actions == 1:
+                continue  # skip rows where there is only 1 option for an action
+            elif EXCLUDE_WITH_LOW_VISITS and total_num_visits < LOW_VISITS_THRESHOLD:
+                continue
             else:
                 instance_board_list.append(board)
                 instance_mask_list.append(mask)
+                instance_action_list.append(actions)
                 instance_policy_list.append(policy)
                 instance_turn_factions.append(current_faction)
 
-    zipped_instance_lists = zip(instance_board_list, instance_mask_list, instance_policy_list, instance_turn_factions)
-    instance_iterator = zipped_instance_lists \
-        if len(instance_board_list) <= RANDOM_SAMPLES_PER_GAME or not use_random_samples \
-        else random.sample(list(zipped_instance_lists), k=RANDOM_SAMPLES_PER_GAME)
+    zipped_instance_lists = zip(
+        instance_board_list, instance_mask_list, instance_action_list, instance_policy_list, instance_turn_factions)
 
-    for board, mask, policy, turn_faction in instance_iterator:
+    instance_iterator = zipped_instance_lists \
+        if len(instance_board_list) <= random_samples or not use_random_samples \
+        else random.sample(list(zipped_instance_lists), k=random_samples)
+
+    for board, mask, action, policy, turn_faction in instance_iterator:
         if turn_faction is None or turn_faction == F_UNDEFINED:
             print(blue("ERROR: No current unit on board?"), turn_faction)
 
+        if use_random_flip:
+            board = board.reshape(BOARD_SIZE, BOARD_SIZE, 18 + ACTIONS * 2)
+            mask = mask.reshape(BOARD_SIZE, BOARD_SIZE, ACTIONS)
+            policy = policy.reshape(BOARD_SIZE, BOARD_SIZE, ACTIONS)
+
+            if random.random() > 0.5:
+                board = np.fliplr(board)
+                mask = np.fliplr(mask)
+                policy = np.fliplr(policy)
+
+            if random.random() > 0.5:
+                board = np.flipud(board)
+                mask = np.flipud(mask)
+                policy = np.flipud(policy)
+
+            board = board.flatten()
+            mask = mask.flatten()
+            policy = policy.flatten()
+
         board_list.append(board)
         mask_list.append(mask)
+        action_list.append(action)
         policy_list.append(policy)
 
         value: float
@@ -91,23 +148,25 @@ def load_single_datapoint(board_list: list, mask_list: list, policy_list: list, 
 def load_ramdisk_data(use_random_samples=True):
     board_list = []
     mask_list = []
+    action_list = []
     policy_list = []
     value_list = []
 
     for file in tqdm(islice(os.listdir(GENERATED_GAME_DATA_PATH), LIMIT_GAMES_TO_LOAD)):
         if file.startswith("sim_"):
             load_single_datapoint(
-                board_list, mask_list, policy_list, value_list,
+                board_list, mask_list, action_list, policy_list, value_list,
                 filepath=GENERATED_GAME_DATA_PATH + file,
                 use_random_samples=use_random_samples
             )
 
     board_stack = np.vstack(board_list)
     mask_stack = np.vstack(mask_list)
+    action_list = np.vstack(action_list)
     policy_stack = np.vstack(policy_list)
     value_stack = np.vstack(value_list)
 
-    return board_stack, mask_stack, policy_stack, value_stack
+    return board_stack, mask_stack, action_list, policy_stack, value_stack
 
 
 def clear_ramdisk_data():

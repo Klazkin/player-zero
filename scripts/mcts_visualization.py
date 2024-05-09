@@ -74,6 +74,7 @@ action_name_dict = {
 }
 
 HORIZONTAL_STYLE = False
+TOP_ONLY = True
 
 
 def layout(node: TreeNode, max_depth=5):
@@ -88,18 +89,25 @@ def layout(node: TreeNode, max_depth=5):
         return
 
     action_id, target_x, target_y, visits, score, policy, faction = str.split(node.name, "/")
+    node.add_features(faction=faction)
+
+    if TOP_ONLY and not node.is_root() and node.get_ancestors()[0].faction != faction:
+        for child in node.get_children():
+            child.detach()
+
+        return
 
     action = Action(int(action_id))
 
     def get_exploit(n_score: str, n_visits: str) -> float:
-        return round(float(n_score), 5)  # if float(n_visits) > 0 else 0
+        return round(float(n_score), 5) if float(n_visits) > 0 else 0 # /float(n_visits)
 
     exploit = get_exploit(score, visits)
 
     def get_action_name(a: str):
         return action_name_dict.get(Action(int(a)), "Unknown")
 
-    action_name = "ROOT" if node.is_root() else action_name_dict.get(action, "Unknown")
+    action_name = "Root" if node.is_root() else action_name_dict.get(action, "Unknown")
     if action == Action.COMBINE_ACTIONS:
         action_target = f"({get_action_name(target_x)},{get_action_name(target_y)})"
     else:
@@ -142,7 +150,8 @@ def layout(node: TreeNode, max_depth=5):
     node.add_features(
         max_policy_path=max_policy_path,
         max_exploit_path=max_exploit_path,
-        max_visits_path=max_visits_path
+        max_visits_path=max_visits_path,
+        faction=faction
     )
 
     primary_color, accent_color = {
@@ -181,11 +190,11 @@ def layout(node: TreeNode, max_depth=5):
         node.img_style["hz_line_type"] = 2
         node.dist += 2.5
 
-    if node.get_ancestors() and not node.get_ancestors()[0].max_exploit_path and not node.get_ancestors()[
-        0].max_visits_path:
-        for child in node.get_children():
-            child.detach()
-        return
+    # if node.get_ancestors() and not node.get_ancestors()[0].max_exploit_path and not node.get_ancestors()[
+    #     0].max_visits_path:
+    #     for child in node.get_children():
+    #         child.detach()
+    #     return
 
     add_face_to_node(label, node, 0, position="branch-right")
 

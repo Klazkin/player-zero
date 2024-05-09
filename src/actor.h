@@ -21,11 +21,11 @@ public:
     static void perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface);
     static void reload_pzts_model();
     static Ref<ActionBundle> get_actions_from_decision_tree(Ref<Unit> caster, Ref<Surface> surface);
-    static Ref<ActionBundle> get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns, const String &data_path);
+    static Ref<ActionBundle> get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns);
     static Ref<ActionBundle> get_actions_from_model(Ref<Unit> caster, Ref<Surface> surface);
     static Ref<ActionBundle> get_actions_from_random(Ref<Unit> caster, Ref<Surface> surface);
     static Ref<ActionBundle> get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns);
-    static Ref<ActionBundle> get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations);
+    static Ref<ActionBundle> get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations, const String &model_file);
 };
 
 #endif

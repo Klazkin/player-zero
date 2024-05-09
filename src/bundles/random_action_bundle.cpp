@@ -28,7 +28,7 @@ void RandomActionBundle::cast_next()
     }
 
     CastInfo random_cast = candidate_casts[UtilityFunctions::randi_range(0, candidate_casts.size() - 1)];
-    if (!Action::_is_castable(random_cast))
+    if (Action::_is_castable(random_cast))
     {
         Action::_cast_action(random_cast);
         if (random_cast.action == END_TURN)

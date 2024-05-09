@@ -26,7 +26,7 @@ int Status::get_duration() const
 void Status::on_turn_start()
 {
     decrease_duration();
-    if (get_duration() <= 0)
+    if (duration <= 0)
     {
         target_ptr->remove_subscriber(get_id());
     }
@@ -98,7 +98,7 @@ void ShaclesParent::clone_to(CloneContext &clone_context) const
     Unit *caster_clone = as_unit_ptr(clone_context[target_ptr]);
     Unit *target_clone = as_unit_ptr(clone_context[shacle_target_ptr]);
 
-    if (target_clone == nullptr) // Todo investigate why this check is needed
+    if (target_clone == nullptr) // TODO investigate why I added this
     {
         return;
     }
@@ -113,7 +113,7 @@ void ShaclesParent::on_hit(int damage)
     if (*link_counter == 2)
     {
         shacle_target_ptr->hit(damage, false); // damage transfer (Without triggering other on_hits..)
-        // Above is "false" so that if two units are shacled twice in both directions we do not create an infinite loop.
+        // Above is "false" so that if two units are shacled in a loop, the damage does not propagate infinitely
     }
 }
 
@@ -133,6 +133,12 @@ ShaclesChild::~ShaclesChild()
 
 void ShaclesChild::clone_to(CloneContext &clone_context) const
 {
+    // Cloning is done by the ShaclesParent class.
+}
+
+int ShaclesChild::get_duration() const
+{
+    return -1 * Status::get_duration();
 }
 
 Dusted::Dusted(Unit *p_target_ptr, const int p_duration) : Status(STATUS_DUSTED, p_target_ptr, p_duration) {}

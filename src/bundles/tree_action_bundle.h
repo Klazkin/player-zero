@@ -13,6 +13,7 @@ private:
     Node *root;
     Node *current_node;
     bool forced_to_finish = false;
+    const bool is_probabilistic = false; // todo enable
 
 public:
     TreeActionBundle(Ref<Surface> p_surface, Ref<Unit> p_caster)

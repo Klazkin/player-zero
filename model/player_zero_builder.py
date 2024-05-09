@@ -1,3 +1,4 @@
+import math
 import tensorflow as tf
 from keras.layers import *
 from keras.regularizers import *
@@ -11,10 +12,10 @@ ATTRIBUTES = 5
 STATUES = 9  # should be an encoded process set?
 
 # MODEL SPEC
-CONV_FILTERS_PER_SCALE = 32
+CONV_FILTERS_PER_SCALE = 16
 RES_BLOCK_KERNEL = 5
 NUM_RES_BLOCKS_PER_SCALE = 2
-VALUE_HEAD_UNITS = 32
+VALUE_HEAD_UNITS = BOARD_SIZE * BOARD_SIZE
 DROPOUT_RATE = 0.3
 LEARNING_RATE = 0.001
 L1_REG = 0  # 1e-4
@@ -25,12 +26,13 @@ PZ_NUM_BOARD = BOARD_SIZE * BOARD_SIZE * (FACTIONS + IS_CONTROLLED + ATTRIBUTES 
 
 
 class ResBlock(Layer):
-    def __init__(self, scale):
+    def __init__(self, scale, filters=None, bias=False):
+        filters = CONV_FILTERS_PER_SCALE * scale if filters is None else filters
         super().__init__()
-        self.conv1 = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=RES_BLOCK_KERNEL, strides=1,
-                            padding='same', use_bias=False, kernel_regularizer=l1_l2(L1_REG, L2_REG))
-        self.conv2 = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=RES_BLOCK_KERNEL, strides=1,
-                            padding='same', use_bias=False, kernel_regularizer=l1_l2(L1_REG, L2_REG))
+        self.conv1 = Conv2D(filters=filters, kernel_size=RES_BLOCK_KERNEL, strides=1,
+                            padding='same', use_bias=bias, kernel_regularizer=l1_l2(L1_REG, L2_REG))
+        self.conv2 = Conv2D(filters=filters, kernel_size=RES_BLOCK_KERNEL, strides=1,
+                            padding='same', use_bias=bias, kernel_regularizer=l1_l2(L1_REG, L2_REG))
         self.batch_norm1 = BatchNormalization()
         self.batch_norm2 = BatchNormalization()
         self.activation = ReLU()
@@ -51,64 +53,34 @@ class ResBlock(Layer):
 class BoardEncoder(Layer):
     def __init__(self, projection_dim):
         super().__init__()
-        self.encoding = Dense(
+        self.encoder = Dense(
             units=projection_dim,
             use_bias=True,
-            name='board_encoding',
             kernel_regularizer=l1_l2(L1_REG, L2_REG)
         )
 
     def call(self, inputs, *args, **kwargs):
-        return self.encoding(inputs)
+        x = self.encoder(inputs)
+        return x
 
 
-class GpsBlock(Layer):
-    def __init__(self, scale):
-        super().__init__()
-        x_filters = (CONV_FILTERS_PER_SCALE * scale)
-        g_filters = x_filters // 3  # 1/3 of filters
-        r_filters = g_filters * 2  # 2/3 of filters
+def build_early_stopper() -> tf.keras.callbacks.EarlyStopping:
+    return tf.keras.callbacks.EarlyStopping(
+        monitor='loss',
+        patience=150,  # TODO REVERT
+        start_from_epoch=5,
+        min_delta=0.0002
+    )
 
-        self.x_batch_norm = BatchNormalization()
 
-        self.g_conv = Conv2D(g_filters, kernel_size=1, strides=1, padding='same', use_bias=False,
-                             kernel_regularizer=l1_l2(L1_REG, L2_REG))
+def build_training_scheduler(warmup_epochs: int = 10, rate=-0.1):
+    def scheduler(epoch, lr):
+        if epoch < warmup_epochs:
+            return lr
+        else:
+            return lr * math.exp(rate)
 
-        self.g_batch_norm = BatchNormalization()
-        self.g_max = GlobalMaxPooling2D()
-        self.g_mean = GlobalAvgPool2D()
-        self.g_concat = Concatenate()
-        self.g_dense = Dense(units=r_filters, use_bias=False, kernel_regularizer=l1_l2(L1_REG, L2_REG))
-        self.g_reshape = Reshape((1, 1, r_filters,))
-        self.g_upsample = UpSampling2D((BOARD_SIZE, BOARD_SIZE))
-
-        self.r_conv1 = Conv2D(r_filters, kernel_size=RES_BLOCK_KERNEL, strides=1, padding='same', use_bias=False,
-                              kernel_regularizer=l1_l2(L1_REG, L2_REG))
-        self.r_conv2 = Conv2D(x_filters, kernel_size=RES_BLOCK_KERNEL, strides=1, padding='same', use_bias=False,
-                              kernel_regularizer=l1_l2(L1_REG, L2_REG))
-        self.r_batch_norm = BatchNormalization()
-        self.r_add = Add()
-        self.activation = ReLU()
-
-    def call(self, inputs, *args, **kwargs):
-        x = self.x_batch_norm(inputs)
-        x = self.activation(x)
-
-        g = self.g_conv(x)
-        g = self.g_batch_norm(g)
-        g = self.activation(g)
-        g = self.g_concat([self.g_max(g), self.g_mean(g)])
-        g = self.g_dense(g)
-        g = self.g_reshape(g)
-        g = self.g_upsample(g)
-
-        r = self.r_conv1(x)
-        r = self.r_add([r, g])
-        r = self.r_batch_norm(r)
-        r = self.activation(r)
-        r = self.r_conv2(r)
-        r = self.r_add([r, inputs])
-        return r
+    return tf.keras.callbacks.LearningRateScheduler(scheduler)
 
 
 def build_model(scale: int):
@@ -118,49 +90,39 @@ def build_model(scale: int):
     board_input = Input(name="board_input", shape=PZ_NUM_BOARD, dtype=float)
     mask_input = Input(name="mask_input", shape=PZ_NUM_POLICY, dtype=float)
 
+    board_norm = Normalization(name="norm")(board_input)
+
     x = Reshape(target_shape=(BOARD_SIZE * BOARD_SIZE,
-                              FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES + ACTIONS * 2))(board_input)
+                              FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES + ACTIONS * 2))(board_norm)
     x = BoardEncoder(projection_dim=CONV_FILTERS_PER_SCALE * scale)(x)
     x = Reshape(target_shape=(BOARD_SIZE, BOARD_SIZE, CONV_FILTERS_PER_SCALE * scale))(x)
 
-    # Todo include batch norm after encoding?
-    # x = Reshape(target_shape=(BOARD_SIZE, BOARD_SIZE, FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES))(
-    #     board_input)
-    # x = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=KERNEL, strides=1, padding='same', use_bias=False,
-    #            kernel_regularizer=l1_l2(L1_REG, L2_REG))(x)
-    # x = BatchNormalization()(x)
-    # x = ReLU()(x)
-
-    # for _ in range(NUM_RES_BLOCKS_PER_SCALE * scale + 1):
-    #     x = ResBlock(scale)(x)
-
-    for i in range(NUM_RES_BLOCKS_PER_SCALE * scale + 1):  # TODO temp removal
-        if i % 2 == 0:
-            x = ResBlock(scale)(x)
-        else:
-            x = GpsBlock(scale)(x)
+    for _ in range(NUM_RES_BLOCKS_PER_SCALE * scale + 1):
+        x = ResBlock(scale, bias=True)(x)
 
     # value head
-    vx = Conv2D(filters=2, kernel_size=1, padding='same', use_bias=False, kernel_regularizer=l1_l2(L1_REG, L2_REG))(x)
+    vx = Conv2D(filters=2, kernel_size=1, padding='same', use_bias=True, kernel_regularizer=l1_l2(L1_REG, L2_REG))(x)
     vx = BatchNormalization()(vx)
     vx = ReLU()(vx)
     vx = Flatten()(vx)
-    vx = Dense(VALUE_HEAD_UNITS, use_bias=False, kernel_regularizer=l1_l2(L1_REG, L2_REG))(vx)
+    vx = Dense(VALUE_HEAD_UNITS, use_bias=True, kernel_regularizer=l1_l2(L1_REG, L2_REG))(vx)
     vx = BatchNormalization()(vx)
     vx = ReLU()(vx)
     vx = Dropout(DROPOUT_RATE)(vx)
     vx = Dense(1, activation='tanh', use_bias=True, name='value', kernel_regularizer=l1_l2(L1_REG, L2_REG),
-               kernel_initializer="zeros")(vx)
+               kernel_initializer='zeros')(vx)
     value_output_layer = vx
 
     # policy head
-    px = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=1, padding='same', use_bias=False,
+    px = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=1, padding='same', use_bias=True,
                 kernel_regularizer=l1_l2(L1_REG, L2_REG))(x)
     px = BatchNormalization()(px)
     px = ReLU()(px)
     px = Conv2D(filters=ACTIONS, kernel_size=1, padding='same', use_bias=True,
-                kernel_regularizer=l1_l2(L1_REG, L2_REG), kernel_initializer="zeros")(px)
+                kernel_regularizer=l1_l2(L1_REG, L2_REG), kernel_initializer='zeros')(px)
+    px = BatchNormalization()(px)
     px = Flatten()(px)
+    # px = Dense(units=px.shape[-1], use_bias=True, kernel_regularizer=l1_l2(L1_REG, L2_REG))(px) TODO REWERT
 
     def process_mask(mask_batch):
         # based on https://github.com/keras-team/keras/blob/f77b020e497a353b644df3aeebc97c831c8057fc/keras/layers/activations/softmax.py#L51
@@ -197,6 +159,7 @@ if __name__ == '__main__':
         show_layer_activations=True,
         show_trainable=True
     )
+
     model.save("./player_zero_model_gen0/")
     build_model(scale=2).save("./player_zero_model_gen0_next/")
 
@@ -209,5 +172,6 @@ if __name__ == '__main__':
     remove_if_exists("training_history.csv")
     remove_if_exists("training_history_next.csv")
     remove_if_exists("training_history_replacement.csv")
+    remove_if_exists("../gaf6/player_zero.onnx")
 
     os.system(f"python -m tf2onnx.convert --saved-model ./player_zero_model_gen0/ --output ../gaf6/player_zero.onnx")

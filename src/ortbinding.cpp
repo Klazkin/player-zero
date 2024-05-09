@@ -165,35 +165,45 @@ std::array<float, 2> WinPredictor::predict(std::array<float, 96> input)
     return output;
 }
 
-PlayerZeroPredictor *PlayerZeroPredictor::instance = nullptr;
+std::unordered_map<std::string, PlayerZeroPredictor *> pz_predictors;
 
-PlayerZeroPredictor *PlayerZeroPredictor::get()
+PlayerZeroPredictor *PlayerZeroPredictor::get(const std::string &model_file)
 {
-    if (instance == nullptr)
+    if (pz_predictors[model_file] == nullptr)
     {
-        instance = new PlayerZeroPredictor();
+        pz_predictors[model_file] = new PlayerZeroPredictor(model_file);
     }
-    return instance;
+
+    return pz_predictors[model_file];
 }
 
-void PlayerZeroPredictor::reload_model()
+void PlayerZeroPredictor::unload_model(const std::string &model_file)
 {
-    delete instance;
-    instance = nullptr;
+    delete pz_predictors[model_file];
+    pz_predictors.erase(model_file);
 }
 
-PlayerZeroPredictor::PlayerZeroPredictor()
+PlayerZeroPredictor::PlayerZeroPredictor(const std::string &model_file)
 {
     std::cout << "Creating cuda prov options.\n";
     Ort::GetApi().CreateCUDAProviderOptions(&cuda_options);
 
-    std::vector<const char *> keys{"device_id", "gpu_mem_limit", "arena_extend_strategy", "cudnn_conv_algo_search", "do_copy_in_default_stream", "cudnn_conv_use_max_workspace", "cudnn_conv1d_pad_to_nc1d"};
     std::vector<const char *> values{"0", "2147483648", "kSameAsRequested", "DEFAULT", "1", "1", "1"};
+    std::vector<const char *> keys{
+        "device_id",
+        "gpu_mem_limit",
+        "arena_extend_strategy",
+        "cudnn_conv_algo_search",
+        "do_copy_in_default_stream",
+        "cudnn_conv_use_max_workspace",
+        "cudnn_conv1d_pad_to_nc1d"};
 
     Ort::GetApi().UpdateCUDAProviderOptions(cuda_options, keys.data(), values.data(), keys.size());
     Ort::GetApi().SessionOptionsAppendExecutionProvider_CUDA_V2(session_options, cuda_options);
 
-    session = new Ort::Session(env, L"player_zero.onnx", session_options); // todo change model file name
+    std::cout << "Loading model file " << model_file << "\n";
+    std::wstring widestr = std::wstring(model_file.begin(), model_file.end());
+    session = new Ort::Session(env, widestr.c_str(), session_options);
     std::cout << "Finished settings session options.\n";
 }
 

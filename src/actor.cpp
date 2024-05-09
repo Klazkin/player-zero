@@ -15,12 +15,12 @@ void Actor::_bind_methods()
     ClassDB::bind_static_method("Actor", D_METHOD("append_winner_to_file", "data_path", "winner"), &Actor::append_winner_to_file);
     ClassDB::bind_static_method("Actor", D_METHOD("write_winner_at_the_end_of_file", "data_path", "winner"), &Actor::write_winner_at_the_end_of_file);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "caster", "surface"), &Actor::get_actions_from_decision_tree);
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface", "iterations", "max_rollout_turns", "data_path"), &Actor::get_actions_from_mcts);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_mcts);
     ClassDB::bind_static_method("Actor", D_METHOD("perfrom_random_actions_for_turn", "caster", "surface"), &Actor::perfrom_random_actions_for_turn);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_model", "caster", "surface"), &Actor::get_actions_from_model);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_random", "caster", "surface"), &Actor::get_actions_from_random);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_wpts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_wpts);
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_pzts", "caster", "surface", "iterations"), &Actor::get_actions_from_pzts);
+    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_pzts", "caster", "surface", "iterations", "model_file"), &Actor::get_actions_from_pzts);
     ClassDB::bind_static_method("Actor", D_METHOD("reload_pzts_model"), &Actor::reload_pzts_model);
 }
 
@@ -150,7 +150,7 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
         std::vector<CastInfo> candidate_casts;
         for (auto action : caster->get_hand_set())
         {
-            std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface, caster, Vector2i()});
+            std::vector<CastInfo> action_casts = Action::generate_action_casts({action, surface, caster, caster->get_position()});
             candidate_casts.insert(candidate_casts.end(), action_casts.begin(), action_casts.end());
         }
 
@@ -160,14 +160,7 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
             break;
         }
 
-        int cast_pt = UtilityFunctions::randi_range(0, candidate_casts.size() - 1);
-
-        if (cast_pt >= candidate_casts.size())
-        {
-            UtilityFunctions::printerr("Critical: Generated random int bigger than candidates list.");
-        }
-
-        CastInfo random_cast = candidate_casts[cast_pt];
+        CastInfo random_cast = candidate_casts[UtilityFunctions::randi_range(0, candidate_casts.size() - 1)];
         if (!Action::_is_castable(random_cast))
         {
             UtilityFunctions::printerr("Uncastable action generated in random actor");
@@ -177,8 +170,8 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
             std::cout << caster.is_null() << caster->is_dead() << (caster != surface->turn_get_current_unit()) << "\n";
             continue;
         }
-        Action::_cast_action(random_cast);
 
+        Action::_cast_action(random_cast);
         if (random_cast.action == END_TURN)
         {
             break;
@@ -188,7 +181,7 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
 
 void Actor::reload_pzts_model()
 {
-    PlayerZeroPredictor::reload_model();
+    PlayerZeroPredictor::unload_model("player_zero.onnx");
 }
 
 void write_vec_to_file(ofstream &to_file, const std::vector<float> &vec)
@@ -208,12 +201,17 @@ void write_vec_to_file(ofstream &to_file, const std::vector<float> &vec)
     to_file << '\n';
 }
 
-Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns, const String &data_path)
+Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns)
 {
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
     MonteCarloTreeSearch mcts(ab->get_root(), max_rollout_turns, perfrom_random_actions_for_turn);
     mcts.run(iterations);
-    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
+
+    // ofstream data_file_stream;
+    // data_file_stream.open(std::string("last_action.graph"), std::ios::app);
+    // draw_tree(ab->get_root(), 10, ab->get_root()->caster->get_faction(), data_file_stream);
+    // data_file_stream.close();
+
     return ab;
 }
 
@@ -239,16 +237,18 @@ Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> su
     return ab;
 }
 
-Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations)
+Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> surface, int iterations, const String &model_file)
 {
     Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
-    PlayerZeroTreeSearch pzts(ab->get_root(), 1.0);
+    // ab->is_probabilistic = true; // TODO make configurable
+
+    PlayerZeroTreeSearch pzts(ab->get_root(), 1.0, model_file.ascii().get_data());
     pzts.run(iterations);
 
-    // ofstream data_file_stream;
-    // data_file_stream.open(std::string("last_action.graph"), std::ios::app);
-    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction(), data_file_stream);
-    // data_file_stream.close();
+    ofstream data_file_stream;
+    data_file_stream.open(std::string("last_action.graph"), std::ios::app);
+    draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction(), data_file_stream);
+    data_file_stream.close();
 
     // // Verifitcation code for #93
     // std::array<float, PZ_NUM_BOARD> board_arr = {};

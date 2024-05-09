@@ -69,6 +69,7 @@ public:
     ShaclesChild(int *p_link_counter, Unit *p_target_ptr, const int p_duration);
     ~ShaclesChild();
     void clone_to(CloneContext &clone_context) const override;
+    int get_duration() const override;
 };
 
 class Dusted : public Status
