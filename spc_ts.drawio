@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-05-14T15:47:23.532Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" etag="TG_Lu7PoFF-LdetxBxmB" version="24.4.0" type="github">
+<mxfile host="app.diagrams.net" modified="2024-05-14T15:49:09.531Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" etag="RO2bgc1PLFZyXE25pxNX" version="24.4.0" type="github">
   <diagram name="Page-1" id="16glwOblu38XuQ45_bfo">
     <mxGraphModel dx="1195" dy="652" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -78,7 +78,7 @@
             <mxPoint x="11" y="-1" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="mdbqxrtQqykH6Luiimw--26" value="&lt;div style=&quot;font-size: 13px;&quot;&gt;TCP Server&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=7;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+        <mxCell id="mdbqxrtQqykH6Luiimw--26" value="&lt;div style=&quot;font-size: 13px;&quot;&gt;TCP Server (Pure python)&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=7;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
           <mxGeometry x="575" y="210" width="160" height="35" as="geometry" />
         </mxCell>
         <mxCell id="mdbqxrtQqykH6Luiimw--27" value="NCL Model Builder (Keras)" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=7;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
