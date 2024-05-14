@@ -1,26 +1,26 @@
-<mxfile host="app.diagrams.net" modified="2024-05-14T08:52:20.048Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" etag="ugFwo26qPC1MIjn4bO5_" version="24.4.0" type="github">
+<mxfile host="app.diagrams.net" modified="2024-05-14T08:58:33.333Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" etag="dB3bO4sn_sQEckyVfJaS" version="24.4.0" type="github">
   <diagram name="Page-1" id="C4LSqCpMthRV9HOR-iaF">
-    <mxGraphModel dx="1914" dy="1021" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1595" dy="851" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="1W4X7tc66BTRNZ2V25yI-1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="170" y="60" width="230" height="190" as="geometry" />
+          <mxGeometry x="130" y="10" width="210" height="190" as="geometry" />
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="160" y="50" width="230" height="190" as="geometry" />
+          <mxGeometry x="140" y="20" width="210" height="190" as="geometry" />
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="150" y="40" width="230" height="190" as="geometry" />
+          <mxGeometry x="150" y="30" width="220" height="190" as="geometry" />
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="140" y="30" width="230" height="190" as="geometry" />
+          <mxGeometry x="160" y="40" width="220" height="190" as="geometry" />
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-5" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="130" y="20" width="230" height="190" as="geometry" />
+          <mxGeometry x="170" y="50" width="220" height="190" as="geometry" />
         </mxCell>
-        <mxCell id="1W4X7tc66BTRNZ2V25yI-6" value="&lt;p style=&quot;line-height: 100%;&quot;&gt;Cell Faction [3] - One-hot&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Is Currently Controlled [1] - Binary&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Attributes [5] - Vector of values&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Statuses [9] - Vector of values (Duration)&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Hand [30] - Vector of values&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Deck [30] - Vector of values&lt;br&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="1">
-          <mxGeometry x="120" y="10" width="230" height="190" as="geometry" />
+        <mxCell id="1W4X7tc66BTRNZ2V25yI-6" value="&lt;p style=&quot;line-height: 100%;&quot;&gt;Cell Faction [3] - &lt;i&gt;One-hot encoding&lt;br&gt;&lt;/i&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Is Currently Controlled [1] - &lt;i&gt;Binary encoding&lt;br&gt;&lt;/i&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Attributes [5] - &lt;i&gt;Vector of values&lt;/i&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Statuses [9] - &lt;i&gt;Vector of values&lt;/i&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Hand [30] - &lt;i&gt;Vector of values&lt;/i&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 100%;&quot;&gt;Deck [30] - &lt;i&gt;Vector of values&lt;/i&gt;&lt;br&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="180" y="60" width="220" height="190" as="geometry" />
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-8" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
           <mxGeometry x="440" y="190" width="75" height="75" as="geometry" />
@@ -86,8 +86,8 @@
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-44" value="" style="endArrow=baseDash;html=1;rounded=0;startArrow=baseDash;startFill=0;endFill=0;" edge="1" parent="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="424" y="90" as="sourcePoint" />
-            <mxPoint x="424" y="50" as="targetPoint" />
+            <mxPoint x="440" y="60" as="sourcePoint" />
+            <mxPoint x="380" y="10" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-45" value="Total of 144, for every cell on the 12 by 12 grid." style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1W4X7tc66BTRNZ2V25yI-44">
@@ -95,7 +95,7 @@
             <mxPoint x="74" y="1" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="1W4X7tc66BTRNZ2V25yI-46" value="Mask Input [12, 12, 30]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+        <mxCell id="1W4X7tc66BTRNZ2V25yI-46" value="Policy Mask Input [12, 12, 30]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
           <mxGeometry x="520" y="290" width="210" height="30" as="geometry" />
         </mxCell>
         <mxCell id="1W4X7tc66BTRNZ2V25yI-47" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
