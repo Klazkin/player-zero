@@ -245,10 +245,10 @@ Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> su
     PlayerZeroTreeSearch pzts(ab->get_root(), 1.0, model_file.ascii().get_data());
     pzts.run(iterations);
 
-    ofstream data_file_stream;
-    data_file_stream.open(std::string("last_action.graph"), std::ios::app);
-    draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction(), data_file_stream);
-    data_file_stream.close();
+    // ofstream data_file_stream;
+    // data_file_stream.open(std::string("last_action.graph"), std::ios::app);
+    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction(), data_file_stream);
+    // data_file_stream.close();
 
     // // Verifitcation code for #93
     // std::array<float, PZ_NUM_BOARD> board_arr = {};

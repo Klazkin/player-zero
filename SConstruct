@@ -21,14 +21,19 @@ env.Append(
     CPPPATH=[
         "src/",
         'thirdparty/onnxruntime-win-x64-gpu-1.17.1/include/'
-        #'thirdparty/onnxruntime-directml/build/native/include/'
+        # 'thirdparty/onnxruntime-win-x64-1.16.3/include/'
+        # 'thirdparty/onnxruntime-directml/build/native/include/'
     ],
     LIBPATH=[
-        #'/thirdparty/onnxruntime-directml/runtimes/win-x64/native/'
+        # 'thirdparty/onnxruntime-directml/runtimes/win-x64/native/'
         'thirdparty/onnxruntime-win-x64-gpu-1.17.1/lib/'
+        # 'thirdparty/onnxruntime-win-x64-1.16.3/lib/'
     ],
     LIBS=[
-        'onnxruntime'
+        'onnxruntime',
+        'onnxruntime_providers_cuda',
+        'onnxruntime_providers_shared',
+        'onnxruntime_providers_tensorrt'
     ]
 )
 

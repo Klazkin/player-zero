@@ -15,7 +15,7 @@ STATUES = 9  # should be an encoded process set?
 CONV_FILTERS_PER_SCALE = 16
 RES_BLOCK_KERNEL = 5
 NUM_RES_BLOCKS_PER_SCALE = 2
-VALUE_HEAD_UNITS = BOARD_SIZE * BOARD_SIZE
+VALUE_HEAD_UNITS = CONV_FILTERS_PER_SCALE
 DROPOUT_RATE = 0.3
 LEARNING_RATE = 0.001
 L1_REG = 0  # 1e-4
@@ -23,6 +23,43 @@ L2_REG = 1e-4
 
 PZ_NUM_POLICY = BOARD_SIZE * BOARD_SIZE * ACTIONS
 PZ_NUM_BOARD = BOARD_SIZE * BOARD_SIZE * (FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES + ACTIONS * 2)
+
+
+class GlobalContextEncoder(Layer):
+    def __init__(self, projection_dim):
+        super().__init__()
+        self.g_dense = Dense(
+            units=projection_dim * 4,
+            use_bias=True,
+            kernel_regularizer=l1_l2(L1_REG, L2_REG)
+        )
+        self.l_dense = Dense(
+            units=projection_dim,
+            use_bias=True,
+            kernel_regularizer=l1_l2(L1_REG, L2_REG)
+        )
+        self.activation = ReLU()
+        self.batch_norm1 = BatchNormalization()
+        self.batch_norm2 = BatchNormalization()
+        self.g_pool = GlobalAveragePooling1D()
+        self.g_reshape = Reshape((1, projection_dim * 4,))
+        self.g_upsample = UpSampling1D((BOARD_SIZE * BOARD_SIZE))
+        self.concat = Concatenate()
+
+
+    def call(self, inputs, *args, **kwargs):
+        g = self.g_dense(inputs)
+        g = self.batch_norm1(g)
+        g = self.activation(g)
+        g = self.g_pool(g)
+        g = self.g_reshape(g)
+        g = self.g_upsample(g)
+
+        x = self.concat([g, inputs])
+        x = self.l_dense(x)
+        x = self.batch_norm2(x)
+        x = self.activation(x)
+        return x
 
 
 class ResBlock(Layer):
@@ -90,10 +127,10 @@ def build_model(scale: int):
     board_input = Input(name="board_input", shape=PZ_NUM_BOARD, dtype=float)
     mask_input = Input(name="mask_input", shape=PZ_NUM_POLICY, dtype=float)
 
-    board_norm = Normalization(name="norm")(board_input)
 
     x = Reshape(target_shape=(BOARD_SIZE * BOARD_SIZE,
-                              FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES + ACTIONS * 2))(board_norm)
+                              FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES + ACTIONS * 2))(board_input)
+    x = Normalization(name="norm")(x)
     x = BoardEncoder(projection_dim=CONV_FILTERS_PER_SCALE * scale)(x)
     x = Reshape(target_shape=(BOARD_SIZE, BOARD_SIZE, CONV_FILTERS_PER_SCALE * scale))(x)
 
@@ -109,18 +146,32 @@ def build_model(scale: int):
     vx = BatchNormalization()(vx)
     vx = ReLU()(vx)
     vx = Dropout(DROPOUT_RATE)(vx)
-    vx = Dense(1, activation='tanh', use_bias=True, name='value', kernel_regularizer=l1_l2(L1_REG, L2_REG),
+    vx = Dense(units=1, activation='tanh', use_bias=True, name='value', kernel_regularizer=l1_l2(L1_REG, L2_REG),
                kernel_initializer='zeros')(vx)
     value_output_layer = vx
 
     # policy head
-    px = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=1, padding='same', use_bias=True,
+    px = Conv2D(filters=CONV_FILTERS_PER_SCALE * scale, kernel_size=RES_BLOCK_KERNEL, padding='same', use_bias=True,
                 kernel_regularizer=l1_l2(L1_REG, L2_REG))(x)
     px = BatchNormalization()(px)
     px = ReLU()(px)
-    px = Conv2D(filters=ACTIONS, kernel_size=1, padding='same', use_bias=True,
+    px = Conv2D(filters=ACTIONS, kernel_size=RES_BLOCK_KERNEL, padding='same', use_bias=True,
                 kernel_regularizer=l1_l2(L1_REG, L2_REG), kernel_initializer='zeros')(px)
     px = BatchNormalization()(px)
+    #
+    # heads = []
+    # for action in range(ACTIONS):
+    #     hx = Conv2D(filters=1, kernel_size=1, padding='same', kernel_regularizer=l1_l2(L1_REG, L2_REG))(px)
+    #     hx = BatchNormalization()(hx)
+    #     hx = ReLU()(hx)
+    #     hx = Flatten()(hx)
+    #     hx = Dense(units=1, kernel_regularizer=l1_l2(L1_REG, L2_REG))(hx)
+    #     heads.append(hx)
+    #
+    # hx = Concatenate()(heads)
+    # hx = Dense(units=30, kernel_regularizer=l1_l2(L1_REG, L2_REG))(hx)
+    # hx = Reshape(target_shape=(1, 1, 30))(hx)
+    # px = Add()([px, hx])
     px = Flatten()(px)
     # px = Dense(units=px.shape[-1], use_bias=True, kernel_regularizer=l1_l2(L1_REG, L2_REG))(px) TODO REWERT
 
@@ -144,34 +195,34 @@ def build_model(scale: int):
 if __name__ == '__main__':
     import os
 
-    model = build_model(scale=1)
+    model = build_model(scale=5)
     model.summary()
 
-    tf.keras.utils.plot_model(
-        model,
-        show_shapes=True,
-        show_dtype=True,
-        show_layer_names=True,
-        rankdir='TB',
-        expand_nested=True,
-        dpi=48,
-        layer_range=None,
-        show_layer_activations=True,
-        show_trainable=True
-    )
-
-    model.save("./player_zero_model_gen0/")
-    build_model(scale=2).save("./player_zero_model_gen0_next/")
-
-
-    def remove_if_exists(path):
-        if os.path.exists(path):
-            os.remove(path)
-
-
-    remove_if_exists("training_history.csv")
-    remove_if_exists("training_history_next.csv")
-    remove_if_exists("training_history_replacement.csv")
-    remove_if_exists("../gaf6/player_zero.onnx")
-
-    os.system(f"python -m tf2onnx.convert --saved-model ./player_zero_model_gen0/ --output ../gaf6/player_zero.onnx")
+    # tf.keras.utils.plot_model(
+    #     model,
+    #     show_shapes=True,
+    #     show_dtype=True,
+    #     show_layer_names=True,
+    #     rankdir='TB',
+    #     expand_nested=True,
+    #     dpi=48,
+    #     layer_range=None,
+    #     show_layer_activations=True,
+    #     show_trainable=True
+    # )
+    #
+    # model.save("./player_zero_model_gen0/")
+    # build_model(scale=2).save("./player_zero_model_gen0_next/")
+    #
+    #
+    # def remove_if_exists(path):
+    #     if os.path.exists(path):
+    #         os.remove(path)
+    #
+    #
+    # remove_if_exists("training_history.csv")
+    # remove_if_exists("training_history_next.csv")
+    # remove_if_exists("training_history_replacement.csv")
+    # remove_if_exists("../gaf6/player_zero.onnx")
+    #
+    # os.system(f"python -m tf2onnx.convert --saved-model ./player_zero_model_gen0/ --output ../gaf6/player_zero.onnx")

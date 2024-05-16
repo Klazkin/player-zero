@@ -77,7 +77,7 @@ class GpsBlock(Layer):
         self.g_max = GlobalMaxPooling2D()
         self.g_mean = GlobalAvgPool2D()
         self.g_concat = Concatenate()
-        self.g_dense = Dense(units=r_filters, use_bias=False, kernel_regularizer=l1_l2(L1_REG, L2_REG))
+        self.g_dense = Dense(units=r_filters, use_bias=True, kernel_regularizer=l1_l2(L1_REG, L2_REG))
         self.g_reshape = Reshape((1, 1, r_filters,))
         self.g_upsample = UpSampling2D((BOARD_SIZE, BOARD_SIZE))
 

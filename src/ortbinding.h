@@ -54,7 +54,8 @@ struct PZPrediction
 class PlayerZeroPredictor
 {
 private:
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+    // Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+    Ort::MemoryInfo memory_info;
     Ort::Env env{ORT_LOGGING_LEVEL_INFO, "PlayerZero"};
     OrtCUDAProviderOptionsV2 *cuda_options = nullptr;
     Ort::SessionOptions session_options;

@@ -184,22 +184,34 @@ void PlayerZeroPredictor::unload_model(const std::string &model_file)
 }
 
 PlayerZeroPredictor::PlayerZeroPredictor(const std::string &model_file)
+    : memory_info("Cuda", OrtDeviceAllocator, 0, OrtMemTypeDefault)
 {
     std::cout << "Creating cuda prov options.\n";
     Ort::GetApi().CreateCUDAProviderOptions(&cuda_options);
 
-    std::vector<const char *> values{"0", "2147483648", "kSameAsRequested", "DEFAULT", "1", "1", "1"};
     std::vector<const char *> keys{
         "device_id",
-        "gpu_mem_limit",
-        "arena_extend_strategy",
-        "cudnn_conv_algo_search",
-        "do_copy_in_default_stream",
+        // "gpu_mem_limit",
+        // "arena_extend_strategy",
+        // "cudnn_conv_algo_search",
+        // "do_copy_in_default_stream",
         "cudnn_conv_use_max_workspace",
-        "cudnn_conv1d_pad_to_nc1d"};
+        // "cudnn_conv1d_pad_to_nc1d"
+    };
+
+    std::vector<const char *> values{
+        "0",
+        // "2147483648",
+        // "kSameAsRequested",
+        // "DEFAULT",
+        // "1",
+        "1",
+        // "1"
+    };
 
     Ort::GetApi().UpdateCUDAProviderOptions(cuda_options, keys.data(), values.data(), keys.size());
     Ort::GetApi().SessionOptionsAppendExecutionProvider_CUDA_V2(session_options, cuda_options);
+    // Ort::GetApi().SessionOptionsAppendExecutionProvider_DML(session_options, 0);
 
     std::cout << "Loading model file " << model_file << "\n";
     std::wstring widestr = std::wstring(model_file.begin(), model_file.end());

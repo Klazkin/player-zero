@@ -1032,7 +1032,7 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, co
             continue;
         }
 
-        if (child->visits <= 500 || child->is_terminal()) // TODO change back to 250 for pzts
+        if (child->visits <= 1000 || child->is_terminal()) // TODO change back to 250 for pzts
         {
             continue;
         }

@@ -194,13 +194,15 @@ def test_training():
 
     print(blue('Training model'))
     # model: keras.Model = build_multi_head(1, num_heads=1)  # tf.keras.models.load_model(f"./player_zero_model_gen1_next/")
-    # model.optimizer.learning_rate = 0.0001
+
     # model.optimizer.clipnorm = 1.0
 
     import datetime
     import time
 
-    model: keras.Model = build_model(1)
+    # model: keras.Model = build_model(1)
+    model: keras.Model = tf.keras.models.load_model(f"./latest_test_model/")
+    model.optimizer.learning_rate = 0.001
     # model.optimizer.learning_rate = 0.00005
 
     print(blue("Adapting data..."))
@@ -234,9 +236,9 @@ def test_training():
 
 
 if __name__ == '__main__':
-    test_training()
-    # main()
-    # load_train_save(2)
+    # test_training()
+    main()
+    # load_train_save(1)
 # student_network_scale = 3
 # load_train_save(3)
 
