@@ -129,7 +129,7 @@ public:
     float simulate(Node *node) override;
     void backpropagate(Node *node, const float score) override;
 
-    static void serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate);
+    static void serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate, const int visits_threshold);
     void test_for_multiple_factions(Node *node);
 };
 

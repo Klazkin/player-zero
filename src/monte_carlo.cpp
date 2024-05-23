@@ -2,6 +2,7 @@
 #include "status.h"
 #include <iostream>
 #include <fstream>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 Node::~Node()
 {
@@ -755,7 +756,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
         }
         fstream << "\n";
 
-        serialize_node(fstream, node, root->caster->get_faction(), true);
+        serialize_node(fstream, node, root->caster->get_faction(), true, 500);
         fstream << "0\n0\n0\nBoard:\n";
         for (auto b : board)
         {
@@ -810,7 +811,7 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
                 fstream.open(std::string("board_input_large_policy.txt"), std::ios::app);
                 fstream << "Policy: " << action_policy << "\n";
                 fstream << "Action: " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "\n";
-                serialize_node(fstream, node, root->caster->get_faction(), false);
+                serialize_node(fstream, node, root->caster->get_faction(), false, 0);
                 fstream << "0\n0\n0\nBoard:\n";
                 for (auto b : board)
                 {
@@ -918,7 +919,7 @@ float clamp_score(float score)
     return std::clamp(score, -0.99999f, 0.99999f);
 }
 
-void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate)
+void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate, const int visits_threshold)
 {
     to_file << node->surface->get_element_positions().size() << '\n';
 
@@ -1025,25 +1026,40 @@ void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, co
         return;
     }
 
+    Node *best_child = nullptr;
+    int best_visits = 0;
+
     for (auto child : node->children)
     {
-        if (child->get_action() == INVALID_ACTION || child->get_action() == END_TURN || child->get_action() == BLOODDRAWING)
+        if (child->visits > best_visits)
         {
-            continue;
+            best_visits = child->visits;
+            best_child = child;
         }
-
-        if (child->visits <= 1000 || child->is_terminal()) // TODO change back to 250 for pzts
-        {
-            continue;
-        }
-
-        if (child->caster->get_faction() != node->caster->get_faction())
-        {
-            continue;
-        }
-
-        serialize_node(to_file, child, root_faction, true);
     }
+
+    if (best_child != nullptr && best_child->get_action() == BLOODDRAWING)
+    {
+        if (!best_child->is_leaf())
+        {
+            best_child = best_child->children[UtilityFunctions::randi_range(0, best_child->children.size() - 1)];
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    if (best_visits < visits_threshold ||
+        best_child->is_terminal() ||
+        best_child->get_action() == INVALID_ACTION ||
+        best_child->get_action() == END_TURN ||
+        best_child->caster->get_faction() != node->caster->get_faction())
+    {
+        return;
+    }
+
+    serialize_node(to_file, best_child, root_faction, true, visits_threshold);
 }
 
 void PlayerZeroTreeSearch::test_for_multiple_factions(Node *node)

@@ -169,10 +169,10 @@ Node *TreeActionBundle::get_root() const
     return root;
 }
 
-void TreeActionBundle::save_data(const String &path)
+void TreeActionBundle::save_data(const String &path, const int visits_threshold)
 {
     ofstream data_file_stream;
     data_file_stream.open(std::string(path.ascii()), std::ios::app);
-    PlayerZeroTreeSearch::serialize_node(data_file_stream, root, root->caster->get_faction(), true);
+    PlayerZeroTreeSearch::serialize_node(data_file_stream, root, root->caster->get_faction(), true, visits_threshold);
     data_file_stream.close();
 }

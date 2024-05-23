@@ -5,7 +5,7 @@ void ActionBundle::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("is_finished"), &ActionBundle::is_finished);
     ClassDB::bind_method(D_METHOD("cast_next"), &ActionBundle::cast_next);
-    ClassDB::bind_method(D_METHOD("save_data", "path"), &ActionBundle::save_data);
+    ClassDB::bind_method(D_METHOD("save_data", "path", "visits_threshold"), &ActionBundle::save_data);
 }
 
 bool ActionBundle::is_finished() const
@@ -22,7 +22,7 @@ void ActionBundle::cast_next()
     }
 }
 
-void ActionBundle::save_data(const String &path)
+void ActionBundle::save_data(const String &path, const int visits_threshold)
 {
     std::cout << "Attempting to save data on abstract ActionBundle.\n";
 }

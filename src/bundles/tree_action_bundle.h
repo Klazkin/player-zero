@@ -31,7 +31,7 @@ public:
     bool is_finished() const override;
     void cast_next() override;
     Node *get_root() const;
-    void save_data(const String &path) override;
+    void save_data(const String &path, const int visits_threshold) override;
 };
 
 #endif
