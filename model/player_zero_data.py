@@ -12,8 +12,8 @@ GENERATED_GAME_DATA_PATH = "/mnt/r/"
 # GAME DATA CONF
 BOARD_SIZE = 12
 ACTIONS = 30
-RANDOM_SAMPLES_PER_GAME = 5 # 7
-LIMIT_GAMES_TO_LOAD = 25000
+RANDOM_SAMPLES_PER_GAME = 7  # 5  # 7
+LIMIT_GAMES_TO_LOAD = 15000
 
 # Factions
 F_UNDEFINED, F_PLAYER, F_MONSTER = -1, 0, 1
@@ -106,14 +106,13 @@ def load_ramdisk_data(use_random_samples=True, use_random_flip=ENABLE_H_V_FLIP):
 def convert_data_to_numpy(
         data_list: list[BundledData], use_random_flip=ENABLE_H_V_FLIP
 ) -> 'board_stack, mask_stack, action_list, policy_stack, value_stack':
-
     n = len(data_list)
     print(blue(f"Allocating data for {n} data bundles."))
-    board_stack = np.zeros(shape=(n, PZ_NUM_BOARD), dtype=float)
-    mask_stack = np.zeros(shape=(n, PZ_NUM_POLICY), dtype=float)
+    board_stack = np.zeros(shape=(n, PZ_NUM_BOARD), dtype=np.float32)
+    mask_stack = np.zeros(shape=(n, PZ_NUM_POLICY), dtype=np.float32)
     action_list = np.zeros(shape=(1,))  # = np.zeros(shape=(n, ACTIONS * 2), dtype=float) # removed
-    policy_stack = np.zeros(shape=(n, PZ_NUM_POLICY), dtype=float)
-    value_stack = np.zeros(shape=(n,), dtype=float)
+    policy_stack = np.zeros(shape=(n, PZ_NUM_POLICY), dtype=np.float32)
+    value_stack = np.zeros(shape=(n,), dtype=np.float32)
 
     for i, data in enumerate(data_list):
         current_faction = None

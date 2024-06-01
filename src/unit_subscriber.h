@@ -7,8 +7,8 @@ enum UnitSubscriberIdentifier
 {
     INVALID_SUB = -1,
     STATUS_BURN,
-    STATUS_SLOW,
-    STATUS_COUNTDOWN,
+    STATUS_SLOW,      // unused
+    STATUS_COUNTDOWN, // unused
     STATUS_SHACLES,
     STATUS_DUSTED,
     STATUS_SPIRITING,

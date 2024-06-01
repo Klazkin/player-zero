@@ -86,29 +86,11 @@ public:
     virtual float simulate(Node *node);
     virtual void backpropagate(Node *node, const float score);
     void run(const int iterations);
-    Node *expand_random(Node *node, bool from_blooddrawing);
+    Node *expand_random(Node *node, bool from_blooddrawing, const Ref<Unit> next_caster);
+    Node *expand_auto(Node *node, const Ref<Unit> next_caster);
 };
 
-void serialize_unit(std::vector<float> &vec, Ref<Unit> unit);
-std::vector<float> serialize_cast(CastInfo cast);
-std::vector<float> serialize_state(Ref<Surface> surface);
 void draw_tree(Node *node, int depth, Faction root_faction, std::ofstream &fstream);
-void serialize_tree_to_stream(const Node *node, std::ofstream &to_file, const int visits_threshold);
-
-class WinPredictorTreeSearch : public MonteCarloTreeSearch
-{
-
-public:
-    WinPredictorTreeSearch(
-        Node *p_root,
-        const int p_max_sim_depth,
-        ActionPerformerFunction p_performer)
-        : MonteCarloTreeSearch(p_root, p_max_sim_depth, p_performer){};
-
-    float calculate_surface_score(Ref<Surface> surface) const override;
-};
-
-void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &board);
 
 class PlayerZeroTreeSearch : public MonteCarloTreeSearch
 {

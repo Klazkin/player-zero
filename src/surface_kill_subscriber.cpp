@@ -34,7 +34,7 @@ void SurfaceKillSubscriber::on_death() // TODO need a way better dead unit clean
         surface->lift_element(element->get_position());
     }
 
-    if ((*surface->turn_get_current_unit()) == element) // Only for units, but the element may be a SE too
+    if ((*surface->turn_get_current_unit()) == element) // only needed for units, but we do not know if it is a unit or not
     {
         surface->end_current_units_turn();
     }

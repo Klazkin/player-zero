@@ -17,7 +17,12 @@ RES_BLOCK_KERNEL = 5
 NUM_RES_BLOCKS_PER_SCALE = 2
 VALUE_HEAD_UNITS = CONV_FILTERS_PER_SCALE
 DROPOUT_RATE = 0.3
-LEARNING_RATE = 0.001
+
+LEARNING_RATE_001 = 0.001
+LEARNING_RATE_0005 = 0.0005
+LEARNING_RATE_0002 = 0.0002
+LEARNING_RATE_REDUCTION = -0.1
+
 L1_REG = 0  # 1e-4
 L2_REG = 1e-4
 
@@ -45,7 +50,6 @@ class GlobalContextEncoder(Layer):
         self.g_reshape = Reshape((1, projection_dim * 4,))
         self.g_upsample = UpSampling1D((BOARD_SIZE * BOARD_SIZE))
         self.concat = Concatenate()
-
 
     def call(self, inputs, *args, **kwargs):
         g = self.g_dense(inputs)
@@ -110,14 +114,23 @@ def build_early_stopper() -> tf.keras.callbacks.EarlyStopping:
     )
 
 
-def build_training_scheduler(warmup_epochs: int = 10, rate=-0.1):
+def build_training_scheduler(warmup_epochs: int = 10):
     def scheduler(epoch, lr):
         if epoch < warmup_epochs:
             return lr
         else:
-            return lr * math.exp(rate)
+            return lr * math.exp(LEARNING_RATE_REDUCTION)
 
     return tf.keras.callbacks.LearningRateScheduler(scheduler)
+
+
+def get_learning_rate(gen: int) -> float:
+    if gen <= 2:
+        return LEARNING_RATE_001
+    elif gen <= 5:
+        return LEARNING_RATE_0005
+    else:
+        return LEARNING_RATE_0002
 
 
 def build_model(scale: int):
@@ -126,7 +139,6 @@ def build_model(scale: int):
 
     board_input = Input(name="board_input", shape=PZ_NUM_BOARD, dtype=float)
     mask_input = Input(name="mask_input", shape=PZ_NUM_POLICY, dtype=float)
-
 
     x = Reshape(target_shape=(BOARD_SIZE * BOARD_SIZE,
                               FACTIONS + IS_CONTROLLED + ATTRIBUTES + STATUES + ACTIONS * 2))(board_input)
@@ -173,6 +185,7 @@ def build_model(scale: int):
     # hx = Reshape(target_shape=(1, 1, 30))(hx)
     # px = Add()([px, hx])
     px = Flatten()(px)
+
     # px = Dense(units=px.shape[-1], use_bias=True, kernel_regularizer=l1_l2(L1_REG, L2_REG))(px) TODO REWERT
 
     def process_mask(mask_batch):
@@ -187,7 +200,7 @@ def build_model(scale: int):
     model = tf.keras.models.Model(inputs=[board_input, mask_input],
                                   outputs=[policy_output_layer, value_output_layer])
     model.compile(loss=['categorical_crossentropy', 'mean_squared_error'],
-                  optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+                  optimizer=tf.keras.optimizers.Adam(learning_rate=get_learning_rate(0)),
                   metrics=['accuracy'])
     return model
 
@@ -195,34 +208,34 @@ def build_model(scale: int):
 if __name__ == '__main__':
     import os
 
-    model = build_model(scale=5)
+    model = build_model(scale=1)
     model.summary()
 
-    # tf.keras.utils.plot_model(
-    #     model,
-    #     show_shapes=True,
-    #     show_dtype=True,
-    #     show_layer_names=True,
-    #     rankdir='TB',
-    #     expand_nested=True,
-    #     dpi=48,
-    #     layer_range=None,
-    #     show_layer_activations=True,
-    #     show_trainable=True
-    # )
-    #
-    # model.save("./player_zero_model_gen0/")
-    # build_model(scale=2).save("./player_zero_model_gen0_next/")
-    #
-    #
-    # def remove_if_exists(path):
-    #     if os.path.exists(path):
-    #         os.remove(path)
-    #
-    #
-    # remove_if_exists("training_history.csv")
-    # remove_if_exists("training_history_next.csv")
-    # remove_if_exists("training_history_replacement.csv")
-    # remove_if_exists("../gaf6/player_zero.onnx")
-    #
-    # os.system(f"python -m tf2onnx.convert --saved-model ./player_zero_model_gen0/ --output ../gaf6/player_zero.onnx")
+    tf.keras.utils.plot_model(
+        model,
+        show_shapes=True,
+        show_dtype=True,
+        show_layer_names=True,
+        rankdir='TB',
+        expand_nested=True,
+        dpi=48,
+        layer_range=None,
+        show_layer_activations=True,
+        show_trainable=True
+    )
+
+    model.save("./player_zero_model_gen0/")
+    build_model(scale=2).save("./player_zero_model_gen0_next/")
+
+
+    def remove_if_exists(path):
+        if os.path.exists(path):
+            os.remove(path)
+
+
+    remove_if_exists("training_history.csv")
+    remove_if_exists("training_history_next.csv")
+    remove_if_exists("training_history_replacement.csv")
+    remove_if_exists("../gaf6/player_zero.onnx")
+
+    os.system(f"python -m tf2onnx.convert --saved-model ./player_zero_model_gen0/ --output ../gaf6/player_zero.onnx")

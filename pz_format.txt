@@ -1,0 +1,20 @@
+X Pos
+Y Pos
+Faction: is Undefined (element)
+Faction: is Player
+Faction: is Monster
+Is currently controlled
+Attribute: hp
+Attribute: max hp
+Attribute: speed
+Attribute: attack
+Attribute: defence
+Status: STATUS_BURN
+Status: STATUS_SLOW
+Status: STATUS_COUNTDOWN
+Status: STATUS_SHACLES
+Status: STATUS_DUSTED
+Status: STATUS_SPIRITING
+Status: STATUS_IMMOLATION
+Status: STATUS_CORE_ARMOR
+Status: STATUS_HOARFROST_ARMOR

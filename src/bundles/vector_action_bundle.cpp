@@ -38,3 +38,8 @@ void VectorActionBundle::push_back_cast(const CastInfo &cast)
 {
     casts.push_back(cast);
 }
+
+void VectorActionBundle::save_data(const String &path, const int visits_threshold)
+{
+    // does nothing
+}

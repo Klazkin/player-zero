@@ -12,32 +12,32 @@ class Action(Enum):
     COILBLADE = auto()
     SWIFTARROW = auto()
     ALIGNMENT_LANCE = auto()
+    DAGGERS = auto()
     WRATHSPARK = auto()
     GROUNDRAISE = auto()
     BLOODDRAWING = auto()
-    WISPSPARKS = auto()
-    BONEDUST = auto()
     RESPIRIT = auto()
-    SNOWMOTES = auto()
-    ETERNALSHACLES = auto()
-    ALTAR = auto()
+    COLDUST = auto()
     END_TURN = auto()
     COMBINE_ACTIONS = auto()
-    NETHERSWAP = auto()
-    LOS_ACTION = auto()
-    DETONATION = auto()
-    DEBUG_KILL = auto()
-    BONESPARKS = auto()
-    SUNDIVE = auto()
-    METEORSHATTER = auto()
-    ARMORCORE = auto()
-    IMMOLATION = auto()
-    ICEPOLE = auto()
+    SENTRY = auto()
     OBLIVION = auto()
+    BLOCK = auto()
+    METEORSHATTER = auto()
+    ALTAR = auto()
+    ARMORCORE = auto()
+    BARRAGE = auto()
+    IMMOLATION = auto()
+    FLARE = auto()
+    COLDSPARK = auto()
+    SUNDIVE = auto()
+    ETERNAL_SHACLES = auto()
+    LEACH = auto()
+    NETHERSWAP = auto()
     HOARFROST = auto()
     RAPID_GROWTH = auto()
-    SUBLIMESTRUCTURE = auto()
     BLESSING = auto()
+    SENTRY_STRIKE = auto()
 
 
 action_name_dict = {
@@ -50,34 +50,28 @@ action_name_dict = {
     Action.BLOODDRAWING: "Blood",
     Action.TREAD: "Move",
     Action.COILBLADE: "Sword",
-    Action.ETERNALSHACLES: "Shacles",
+    Action.ETERNAL_SHACLES: "Shacles",
     Action.ALTAR: "Altar",
     Action.NETHERSWAP: "Netherswap",
-    Action.LOS_ACTION: "Action LOS",
-    Action.BONEDUST: "Bonedust",
-    Action.WISPSPARKS: "Wispsparks",
-    Action.BONESPARKS: "Bonesparks",
-    Action.DEBUG_KILL: "Insta Kill",
-    Action.DETONATION: "Explode",
     Action.RESPIRIT: "Respirit",
-    Action.SNOWMOTES: "Snowmotes",
     Action.SUNDIVE: "Sundive",
     Action.METEORSHATTER: "Meteor",
     Action.ARMORCORE: "Armorcore",
     Action.IMMOLATION: "Immolation",
-    Action.ICEPOLE: "Icepole",
     Action.OBLIVION: "Oblivion",
     Action.HOARFROST: "Hoarfrost",
     Action.RAPID_GROWTH: "Rapid Growth",
     Action.SWIFTARROW: "Bow",
     Action.ALIGNMENT_LANCE: "Lance",
+    Action.SENTRY: "Sentry",
+    Action.SENTRY_STRIKE: "Sentry Strike",
 }
 
 HORIZONTAL_STYLE = False
-TOP_ONLY = True
+TOP_ONLY = False
 
 
-def layout(node: TreeNode, max_depth=5):
+def layout(node: TreeNode, max_depth=50):
     node_depth = len(node.get_ancestors())
     node.img_style["fgcolor"] = "0"
     node.img_style["shape"] = "sphere"

@@ -67,6 +67,7 @@ namespace godot
         int get_size() const;
         void set_random_events_enabled(const bool value);
         bool get_random_events_enabled() const;
+        int get_turn_counter() const;
     };
 
 }

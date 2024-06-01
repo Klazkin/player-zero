@@ -27,7 +27,7 @@ namespace godot
         int speed = 0;
         int attack = 0;
         int defence = 0;
-        bool stunned = false;
+        int tread_distance = 0;
         bool armored = false;
     };
 
@@ -46,6 +46,8 @@ namespace godot
         int base_attack = 0;
         int base_defence = 0;
         int health = 20;
+
+        const int BASE_TREAD_DISTNACE = 4;
 
     protected:
         static void _bind_methods();
@@ -78,6 +80,8 @@ namespace godot
         void set_base_defence(const int p_defence);
         int get_base_defence() const;
         int get_defence() const;
+
+        int get_tread_distance() const;
 
         void set_faction(const Faction p_faction);
         Faction get_faction() const;
@@ -112,6 +116,8 @@ namespace godot
         std::vector<ActionIdentifier> get_refill_candidates() const;
         void refill_hand();
         void refill_hand(ActionIdentifier refilled_action);
+
+        bool is_autonomous() const;
     };
 
     Unit *as_unit_ptr(Ref<SurfaceElement> element);

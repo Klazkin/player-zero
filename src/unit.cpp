@@ -44,6 +44,7 @@ void Unit::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_hand", "p_hand"), &Unit::set_hand);
     ClassDB::bind_method(D_METHOD("get_hand"), &Unit::get_hand);
     ClassDB::bind_method(D_METHOD("is_in_hand"), &Unit::is_in_hand);
+    ClassDB::bind_method(D_METHOD("is_autonomous"), &Unit::is_autonomous);
 
     ADD_SIGNAL(MethodInfo("health_changed", PropertyInfo(Variant::INT, "new_health")));
     ADD_SIGNAL(MethodInfo("max_health_changed", PropertyInfo(Variant::INT, "new_max_health")));
@@ -122,8 +123,10 @@ int Unit::hit(int damage, bool trigger_on_hit)
 
     emit_signal("hurt", damage);
 
-    if (is_dead())
+    if (is_dead() && get_is_on_surface())
+    {
         trigger_death();
+    }
 
     return 1; // TODO return damage change
 }
@@ -213,6 +216,11 @@ int Unit::get_defence() const
     return base_defence + stat_modifiers.defence;
 }
 
+int Unit::get_tread_distance() const
+{
+    return BASE_TREAD_DISTNACE + stat_modifiers.tread_distance;
+}
+
 void Unit::set_faction(const Faction p_faction)
 {
     faction = p_faction;
@@ -235,6 +243,12 @@ bool Unit::is_dead() const
 
 void Unit::add_subscriber(UnitSubscriber *subscriber)
 {
+    if (is_dead())
+    {
+        delete subscriber;
+        return;
+    }
+
     if (has_subscriber(subscriber->get_id()))
     {
         remove_subscriber(subscriber->get_id());
@@ -293,6 +307,10 @@ void Unit::trigger_on_hit_subscribers(int damage)
         if (has_subscriber(id))
         {
             subscribers[id]->on_hit(damage);
+            if (is_dead())
+            {
+                break;
+            }
         }
     }
 }
@@ -441,6 +459,11 @@ void Unit::refill_hand(ActionIdentifier refilled_action)
     {
         add_to_hand(refilled_action);
     }
+}
+
+bool Unit::is_autonomous() const
+{
+    return is_in_deck(ActionIdentifier::SENTRY_STRIKE) || is_in_deck(ActionIdentifier::BLESSING);
 }
 
 Unit *godot::as_unit_ptr(Ref<SurfaceElement> element)

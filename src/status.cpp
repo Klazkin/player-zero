@@ -70,10 +70,10 @@ void Countdown::on_turn_start()
     Status::on_turn_start();
 }
 
-ShaclesParent::ShaclesParent(int *p_link_counter, Unit *caster_ptr, Unit *p_target_ptr, const int p_duration) : Status(STATUS_SHACLES, caster_ptr, p_duration)
+ShaclesParent::ShaclesParent(int *p_link_counter, Unit *caster_ptr, Ref<Unit> p_target_ref, const int p_duration) : Status(STATUS_SHACLES, caster_ptr, p_duration)
 {
     link_counter = p_link_counter;
-    shacle_target_ptr = p_target_ptr;
+    shacle_target_ref = p_target_ref;
 }
 
 ShaclesParent::~ShaclesParent()
@@ -96,23 +96,23 @@ void ShaclesParent::clone_to(CloneContext &clone_context) const
 
     // link unbroken, instanciate new shacles status on both units.
     Unit *caster_clone = as_unit_ptr(clone_context[target_ptr]);
-    Unit *target_clone = as_unit_ptr(clone_context[shacle_target_ptr]);
+    Ref<Unit> target_clone_ref = clone_context[shacle_target_ref];
 
-    if (target_clone == nullptr) // TODO investigate why I added this
+    if (target_clone_ref == nullptr || !target_clone_ref.is_valid()) // TODO investigate if this is still needed
     {
         return;
     }
 
     int *counter_clone = new int(2);
-    caster_clone->add_subscriber(new ShaclesParent(counter_clone, caster_clone, target_clone, duration));
-    target_clone->add_subscriber(new ShaclesChild(counter_clone, target_clone, duration));
+    caster_clone->add_subscriber(new ShaclesParent(counter_clone, caster_clone, target_clone_ref, duration));
+    target_clone_ref->add_subscriber(new ShaclesChild(counter_clone, as_unit_ptr(target_clone_ref), duration));
 }
 
 void ShaclesParent::on_hit(int damage)
 {
-    if (*link_counter == 2)
+    if (*link_counter == 2 && shacle_target_ref.is_valid())
     {
-        shacle_target_ptr->hit(damage, false); // damage transfer (Without triggering other on_hits..)
+        shacle_target_ref->hit(damage, false); // damage transfer (Without triggering other on_hits..)
         // Above is "false" so that if two units are shacled in a loop, the damage does not propagate infinitely
     }
 }
@@ -153,6 +153,7 @@ void Dusted::on_turn_start()
 {
     StatModifiers &sm = target_ptr->get_stat_modifiers();
     sm.speed -= 2;
+    sm.tread_distance -= 3;
     Status::on_turn_start();
 }
 
@@ -186,7 +187,7 @@ void Immolation::on_turn_start()
     StatModifiers &sm = target_ptr->get_stat_modifiers();
     sm.speed += 1;
     sm.attack += 4;
-    sm.defence -= 1;
+    sm.tread_distance += 2;
 
     if (get_duration() == 1)
         target_ptr->heal(borrowed_hp);

@@ -17,9 +17,7 @@ void Actor::_bind_methods()
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_decision_tree", "caster", "surface"), &Actor::get_actions_from_decision_tree);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_mcts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_mcts);
     ClassDB::bind_static_method("Actor", D_METHOD("perfrom_random_actions_for_turn", "caster", "surface"), &Actor::perfrom_random_actions_for_turn);
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_model", "caster", "surface"), &Actor::get_actions_from_model);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_random", "caster", "surface"), &Actor::get_actions_from_random);
-    ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_wpts", "caster", "surface", "iterations", "max_rollout_turns"), &Actor::get_actions_from_wpts);
     ClassDB::bind_static_method("Actor", D_METHOD("get_actions_from_pzts", "caster", "surface", "iterations", "model_file"), &Actor::get_actions_from_pzts);
     ClassDB::bind_static_method("Actor", D_METHOD("reload_pzts_model"), &Actor::reload_pzts_model);
 }
@@ -28,66 +26,37 @@ Ref<ActionBundle> Actor::get_actions_from_decision_tree(Ref<Unit> caster, Ref<Su
 {
     Ref<VectorActionBundle> ab = memnew(VectorActionBundle);
 
-    auto units = surface->get_only_units_vec();
-    Ref<Unit> target = nullptr;
-
-    for (auto u : units)
+    if (caster->is_in_hand(BLESSING))
     {
-        if (u->get_faction() == caster->get_faction())
+        ab->push_back_cast({BLESSING, surface, caster, Vector2i()});
+    }
+
+    if (caster->is_in_hand(SENTRY_STRIKE))
+    {
+        std::vector<CastInfo> candidates = gen_all_units_with_checker({SENTRY_STRIKE, surface, caster, Vector2i()});
+        Ref<SurfaceElement> best_target = nullptr;
+
+        for (auto ci : candidates)
         {
-            continue;
+            Ref<SurfaceElement> target = surface->get_element(ci.target);
+
+            if (best_target == nullptr)
+            {
+                best_target = target;
+                continue;
+            }
+
+            if (target->get_health() < best_target->get_health())
+            {
+                best_target = target;
+                continue;
+            }
         }
 
-        if ((u->get_position() - caster->get_position()).length_squared() >= 8 * 8)
+        if (best_target != nullptr)
         {
-            continue;
+            ab->push_back_cast({SENTRY_STRIKE, surface, caster, best_target->get_position()});
         }
-
-        if (target != nullptr && u->get_health() > target->get_health())
-        {
-            continue;
-        }
-
-        target = u;
-    }
-
-    if (target == nullptr)
-    {
-        UtilityFunctions::print("DTA: Returning ab, nothing found near.");
-        ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
-        return ab;
-    }
-
-    if ((target->get_position() - caster->get_position()).length_squared() >= 4 * 4)
-    {
-        UtilityFunctions::print("DTA: Adding tread cast");
-        PackedVector2Array path = surface->get_shortest_path(caster->get_position(), target->get_position(), true);
-        UtilityFunctions::print(path);
-        Vector2i tread_target = path[path.size() - 4]; // TODO may cause issues
-        ab->push_back_cast({TREAD, surface, caster, tread_target});
-    }
-
-    if (target->has_subscriber(STATUS_DUSTED) && caster->is_in_hand(WISPSPARKS) && caster->is_in_hand(BONEDUST))
-    {
-        UtilityFunctions::print("DTA: Adding bonesparks cast");
-        ab->push_back_cast(Action::get_combination_cast(surface, caster, WISPSPARKS, BONEDUST));
-        ab->push_back_cast({BONESPARKS, surface, caster, target->get_position()});
-        ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
-        return ab;
-    }
-
-    CastInfo ci = {WISPSPARKS, surface, caster, target->get_position()};
-
-    if (caster->is_in_hand(WISPSPARKS) && check_line_of_sight(ci))
-    {
-        UtilityFunctions::print("DTA: Adding wispsparks cast");
-        ab->push_back_cast(ci);
-    }
-
-    if (caster->is_in_hand(BONEDUST) && !target->has_subscriber(STATUS_DUSTED))
-    {
-        UtilityFunctions::print("DTA: Adding bonedust cast");
-        ab->push_back_cast({BONEDUST, surface, caster, target->get_position()});
     }
 
     ab->push_back_cast({END_TURN, surface, caster, Vector2i()});
@@ -133,9 +102,9 @@ void Actor::write_winner_at_the_end_of_file(const String &path, const Faction wi
 
 void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface)
 {
-    if (surface->turn_get_current_unit() != caster)
+    if (caster.is_null())
     {
-        UtilityFunctions::printerr("Not current units turn.");
+        UtilityFunctions::printerr("Caster is null.");
         return;
     }
 
@@ -145,6 +114,19 @@ void Actor::perfrom_random_actions_for_turn(Ref<Unit> caster, Ref<Surface> surfa
         return;
     }
 
+    if (surface.is_null() || !surface.is_valid())
+    {
+        UtilityFunctions::printerr("Invalid surface.");
+        return;
+    }
+
+    if (surface->turn_get_current_unit() != caster)
+    {
+        UtilityFunctions::printerr("Not current units turn.");
+        return;
+    }
+
+    // std::cout << "x";
     while (!caster->is_dead()) // if caster kills themselves after cast, cant continue to cast
     {
         std::vector<CastInfo> candidate_casts;
@@ -215,25 +197,9 @@ Ref<ActionBundle> Actor::get_actions_from_mcts(Ref<Unit> caster, Ref<Surface> su
     return ab;
 }
 
-Ref<ActionBundle> Actor::get_actions_from_model(Ref<Unit> caster, Ref<Surface> surface)
-{
-    Ref<ActionBundle> ab = memnew(ActionBundle);
-    // Removed function ...
-    return ab;
-}
-
 Ref<ActionBundle> Actor::get_actions_from_random(Ref<Unit> caster, Ref<Surface> surface)
 {
     Ref<RandomActionBundle> ab = memnew(RandomActionBundle(surface, caster));
-    return ab;
-}
-
-Ref<ActionBundle> Actor::get_actions_from_wpts(Ref<Unit> caster, Ref<Surface> surface, int iterations, int max_rollout_turns)
-{
-    Ref<TreeActionBundle> ab = memnew(TreeActionBundle(surface, caster));
-    WinPredictorTreeSearch wpts(ab->get_root(), max_rollout_turns, perfrom_random_actions_for_turn);
-    wpts.run(iterations);
-    // draw_tree(ab->get_root(), 8, ab->get_root()->caster->get_faction());
     return ab;
 }
 
@@ -269,4 +235,38 @@ Ref<ActionBundle> Actor::get_actions_from_pzts(Ref<Unit> caster, Ref<Surface> su
     // node_fs.close();
 
     return ab;
+}
+
+void Actor::perfrom_auto_actions_for_turn(Ref<Unit> caster, Ref<Surface> surface)
+{
+    if (caster.is_null())
+    {
+        UtilityFunctions::printerr("Caster is null.");
+        return;
+    }
+
+    if (caster->is_dead())
+    {
+        UtilityFunctions::printerr("Caster dead at the start of random cast.");
+        return;
+    }
+
+    if (surface.is_null() || !surface.is_valid())
+    {
+        UtilityFunctions::printerr("Invalid surface.");
+        return;
+    }
+
+    if (surface->turn_get_current_unit() != caster)
+    {
+        UtilityFunctions::printerr("Not current units turn.");
+        return;
+    }
+
+    Ref<ActionBundle> ab = get_actions_from_decision_tree(caster, surface);
+
+    while (!ab->is_finished())
+    {
+        ab->cast_next();
+    }
 }

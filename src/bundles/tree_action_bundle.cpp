@@ -16,6 +16,7 @@ bool TreeActionBundle::is_finished() const // TODO simplify this check
         }
 
         std::cout << "is_finished() check failed. " << (current_node == nullptr) << " " << caster.is_null() << " \n";
+        // unit might sacrifice itself to win later?
         return true;
     }
 

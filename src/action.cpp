@@ -28,39 +28,49 @@ void Action::_bind_methods()
     ClassDB::bind_static_method("Action", D_METHOD("has_combination", "action1", "action2"), &Action::has_combination);
     ClassDB::bind_static_method("Action", D_METHOD("get_combination", "action1", "action2"), &Action::get_combination);
 
-    BIND_ENUM_CONSTANT(END_TURN);
-    BIND_ENUM_CONSTANT(COMBINE_ACTIONS);
     BIND_ENUM_CONSTANT(INVALID_ACTION);
+    BIND_ENUM_CONSTANT(TREAD);
+    BIND_ENUM_CONSTANT(COILBLADE);
+    BIND_ENUM_CONSTANT(SWIFTARROW);
+    BIND_ENUM_CONSTANT(ALIGNMENT_LANCE);
+    BIND_ENUM_CONSTANT(DAGGERS);
     BIND_ENUM_CONSTANT(WRATHSPARK);
     BIND_ENUM_CONSTANT(GROUNDRAISE);
     BIND_ENUM_CONSTANT(BLOODDRAWING);
-    BIND_ENUM_CONSTANT(TREAD);
-    BIND_ENUM_CONSTANT(COILBLADE);
-    BIND_ENUM_CONSTANT(ETERNALSHACLES);
-    BIND_ENUM_CONSTANT(ALTAR);
-    BIND_ENUM_CONSTANT(NETHERSWAP);
-    BIND_ENUM_CONSTANT(LOS_ACTION);
-    BIND_ENUM_CONSTANT(DETONATION);
-    BIND_ENUM_CONSTANT(DEBUG_KILL);
-    BIND_ENUM_CONSTANT(WISPSPARKS);
-    BIND_ENUM_CONSTANT(BONEDUST);
-    BIND_ENUM_CONSTANT(BONESPARKS);
     BIND_ENUM_CONSTANT(RESPIRIT);
-    BIND_ENUM_CONSTANT(RAPID_GROWTH);
-    BIND_ENUM_CONSTANT(IMMOLATION);
-    BIND_ENUM_CONSTANT(ARMORCORE);
-    BIND_ENUM_CONSTANT(SUNDIVE);
+    BIND_ENUM_CONSTANT(COLDUST);
+    BIND_ENUM_CONSTANT(END_TURN);
+    BIND_ENUM_CONSTANT(COMBINE_ACTIONS);
+    BIND_ENUM_CONSTANT(SENTRY);
+    BIND_ENUM_CONSTANT(OBLIVION);
+    BIND_ENUM_CONSTANT(BLOCK);
     BIND_ENUM_CONSTANT(METEORSHATTER);
+    BIND_ENUM_CONSTANT(ALTAR);
+    BIND_ENUM_CONSTANT(ARMORCORE);
+    BIND_ENUM_CONSTANT(BARRAGE);
+    BIND_ENUM_CONSTANT(IMMOLATION);
+    BIND_ENUM_CONSTANT(FLARE);
+    BIND_ENUM_CONSTANT(COLDSPARK);
+    BIND_ENUM_CONSTANT(SUNDIVE);
+    BIND_ENUM_CONSTANT(ETERNAL_SHACLES);
+    BIND_ENUM_CONSTANT(LEACH);
+    BIND_ENUM_CONSTANT(NETHERSWAP);
     BIND_ENUM_CONSTANT(HOARFROST);
-    BIND_ENUM_CONSTANT(SWIFTARROW);
-    BIND_ENUM_CONSTANT(ALIGNMENT_LANCE);
+    BIND_ENUM_CONSTANT(RAPID_GROWTH);
     BIND_ENUM_CONSTANT(BLESSING);
+    BIND_ENUM_CONSTANT(SENTRY_STRIKE);
 }
 
 bool Action::_is_castable(const CastInfo &cast_info)
 {
     if (!is_action_registered(cast_info.action))
     {
+        return false;
+    }
+
+    if (!cast_info.caster.is_valid())
+    {
+        std::cout << "attempted to cast on invalid caster\n";
         return false;
     }
 
@@ -85,8 +95,7 @@ bool Action::_is_castable(const CastInfo &cast_info)
 
 void Action::_cast_action(const CastInfo &cast_info)
 {
-    if (cast_info.action != COMBINE_ACTIONS && cast_info.action != END_TURN)
-    // todo add logic for "infinite actions"
+    if (cast_info.action != COMBINE_ACTIONS && cast_info.action != END_TURN) // todo add logic for "infinite actions"
     {
         cast_info.caster->remove_from_hand(cast_info.action);
     }

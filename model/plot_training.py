@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from training_server import TRAINING_EPOCHS
 
-df = pd.read_csv('training_history_next.csv', header=None)  # replace with .csv
+df = pd.read_csv('training_history.csv', header=None)  # replace with .csv
 
 x = df.index
 y1 = df[0]

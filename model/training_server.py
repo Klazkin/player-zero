@@ -5,11 +5,11 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from player_zero_builder import build_model, build_training_scheduler, build_early_stopper, LEARNING_RATE
+from player_zero_builder import build_model, build_training_scheduler, build_early_stopper, get_learning_rate
 from player_zero_data import load_ramdisk_data, clear_ramdisk_data, blue
 
 # TRAINING CONF
-TRAINING_EPOCHS = 150
+TRAINING_EPOCHS = 100
 BATCH_SIZE = 256
 
 # SERVER CONF
@@ -43,7 +43,7 @@ def load_train_save(generation: int):
         norm_layer: tf.keras.layers.Normalization = m.get_layer("norm")
         norm_layer.adapt(board_stack)
 
-        lr = LEARNING_RATE
+        lr = get_learning_rate(generation)
         print(blue("Learning rate set to:"), lr)
         m.optimizer.learning_rate = lr
 

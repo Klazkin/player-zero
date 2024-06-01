@@ -1,6 +1,10 @@
 #include "monte_carlo.h"
 #include "status.h"
+#include "actor.h"
 #include <iostream>
+#include <thread>
+#include <sstream>
+#include <string>
 #include <fstream>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -135,21 +139,69 @@ Node *MonteCarloTreeSearch::expand(Node *node)
         return node;
     }
 
-    if (node->get_action() == END_TURN)
-    {
-        return expand_random(node, false);
-    }
-
-    if (node->get_action() == BLOODDRAWING)
-    {
-        return expand_random(node, true);
-    }
-
     Ref<Unit> next_caster = node->surface->turn_get_current_unit(); // should never be a dead unit!!!
 
-    if (next_caster.is_null() || !next_caster.is_valid())
+    if (next_caster->is_dead() || next_caster.is_null() || !next_caster.is_valid())
     {
-        std::cout << "Next caster is not valid or null" << next_caster.is_null() << next_caster.is_valid() << "\n";
+        std::cout << "Next caster is not valid or null (" << next_caster.is_null() << next_caster.is_valid() << ") \n";
+        std::cout << "# of factions: " << node->surface->get_remaining_factions_count() << "\n";
+        std::cout << "# of units: " << node->surface->get_only_units_vec().size() << "\n";
+        std::cout << "Node: " << node->get_action() << " ";
+        std::cout << "Parent: " << node->parent->get_action() << "\n";
+        std::cout << "Node caster: " << node->caster->is_autonomous() << "\n";
+        std::cout << "history of actions:" << "\n";
+        std::cout << "NC addr: " << as_unit_ptr(next_caster) << "\n";
+        std::cout << "NU addr: " << as_unit_ptr(nullptr) << "\n";
+        std::cout << "COUNTER: " << node->surface->get_turn_counter() << "\n";
+        std::cout << "TURN: ";
+
+        auto turn_order = node->surface->turn_get_order();
+
+        for (size_t i = 0; i < turn_order.size(); i++)
+        {
+            std::cout << as_unit_ptr(turn_order[i]) << ", ";
+            /* code */
+        }
+        std::cout << "\n";
+
+        turn_order = node->parent->surface->turn_get_order();
+
+        std::cout << "COUNTER: " << node->parent->surface->get_turn_counter() << "\n";
+        std::cout << "TURN: ";
+
+        for (size_t i = 0; i < turn_order.size(); i++)
+        {
+            std::cout << as_unit_ptr(turn_order[i]) << ", ";
+            /* code */
+        }
+        std::cout << "\n";
+
+        Node *cur = node;
+        // std::unordered_set<Node *> ps;
+
+        while (cur != nullptr)
+        {
+            auto cpos = cur->caster->get_position();
+            auto tpos = cur->get_target();
+
+            std::cout << " A: " << cur->get_action()
+                      << " C: " << cpos.x << "," << cpos.y
+                      << " T: " << tpos.x << "," << tpos.y << "\n";
+
+            // if (ps.count(cur) > 0)
+            // {
+            //     std::cout << "Cyclic graph.\n";
+            //     break;
+            // }
+            // else
+            // {
+            //     ps.insert(cur);
+            // }
+
+            cur = cur->parent;
+        }
+
+        std::cout << "\n";
         return node;
     }
 
@@ -157,6 +209,21 @@ Node *MonteCarloTreeSearch::expand(Node *node)
     {
         std::cout << "Next caster is dead. ";
         return node;
+    }
+
+    if (next_caster->is_autonomous())
+    {
+        return expand_auto(node, next_caster);
+    }
+
+    if (node->get_action() == END_TURN)
+    {
+        return expand_random(node, false, next_caster);
+    }
+
+    if (node->get_action() == BLOODDRAWING)
+    {
+        return expand_random(node, true, next_caster);
     }
 
     for (auto action : next_caster->get_hand_set())
@@ -234,7 +301,16 @@ float MonteCarloTreeSearch::simulate(Node *node)
             break;
         }
 
-        performer_func(current_unit, rollout_surface);
+        // std::cout << "{";
+        if (current_unit->is_autonomous())
+        {
+            Actor::perfrom_auto_actions_for_turn(current_unit, rollout_surface);
+        }
+        else
+        {
+            performer_func(current_unit, rollout_surface);
+        }
+        // std::cout << "}";
     }
 
     return calculate_surface_score(rollout_surface);
@@ -253,19 +329,33 @@ void MonteCarloTreeSearch::backpropagate(Node *node, const float score)
 
 void MonteCarloTreeSearch::run(const int iterations)
 {
+
+    // auto myid = this_thread::get_id();
+    // std::stringstream ss;
+    // ss << myid;
+    // std::string thread_id_str = ss.str();
+    // std::string filename = "R:\\SERB_log_" + thread_id_str + ".txt";
+    // std::ofstream file(filename);
+
     for (int i = 0; i < iterations; ++i)
     {
+
+        // file << 'S' << std::flush;
         Node *selected_node = select(root);
+        // file << 'E' << std::flush;
         Node *expanded_node = expand(selected_node);
+        // file << 'R' << std::flush;
         float score = simulate(expanded_node);
+        // file << 'B' << std::flush;
         backpropagate(expanded_node, score);
     }
+
+    // file << "F" << std::flush;
+    // file.close();
 }
 
-Node *MonteCarloTreeSearch::expand_random(Node *node, bool from_blooddrawing)
+Node *MonteCarloTreeSearch::expand_random(Node *node, bool from_blooddrawing, const Ref<Unit> next_caster)
 {
-    Ref<Unit> next_caster = node->surface->turn_get_current_unit();
-
     for (auto action : next_caster->get_refill_candidates())
     {
         if ((from_blooddrawing && action == BLOODDRAWING) || action == TREAD)
@@ -294,30 +384,22 @@ Node *MonteCarloTreeSearch::expand_random(Node *node, bool from_blooddrawing)
     return node->children[0];
 }
 
-const auto action_pool = {
-    COMBINE_ACTIONS,
-    WRATHSPARK,
-    GROUNDRAISE,
-    // BLOODDRAWING,
-    TREAD,
-    COILBLADE,
-    ETERNALSHACLES,
-    // ALTAR,
-    NETHERSWAP,
-    WISPSPARKS,
-    BONEDUST,
-    BONESPARKS,
-    RESPIRIT,
-    // SNOWMOTES,
-    SUNDIVE,
-    METEORSHATTER,
-    ARMORCORE,
-    IMMOLATION,
-    // ICEPOLE,
-    // OBLIVION,
-    HOARFROST,
-    RAPID_GROWTH,
-}; // 22
+Node *MonteCarloTreeSearch::expand_auto(Node *node, const Ref<Unit> next_caster)
+{
+    Ref<Surface> surface_clone = node->surface->clone();
+    Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
+    Ref<ActionBundle> ab = Actor::get_actions_from_decision_tree(next_caster_clone, surface_clone);
+
+    next_caster_clone->refill_hand();
+    while (!ab->is_finished())
+    {
+        ab->cast_next();
+    }
+
+    Node *next_node = new ActionCastNode(END_TURN, surface_clone, next_caster_clone, Vector2i());
+    node->add_child(next_node);
+    return next_node;
+}
 
 const auto status_pool = {
     STATUS_BURN,
@@ -330,182 +412,6 @@ const auto status_pool = {
     STATUS_CORE_ARMOR,
     STATUS_HOARFROST_ARMOR,
 }; // 9
-
-void serialize_unit(std::vector<float> &vec, Ref<Unit> unit)
-{
-    vec.push_back(unit->get_health());
-    vec.push_back(unit->get_max_health());
-    vec.push_back(unit->get_speed());
-
-    for (ActionIdentifier action : action_pool)
-        vec.push_back(unit->is_in_deck(action) ? 1 : 0);
-
-    for (ActionIdentifier action : action_pool)
-        vec.push_back(unit->is_in_hand(action) ? 1 : 0);
-
-    for (UnitSubscriberIdentifier status : status_pool)
-    {
-        if (status == STATUS_CORE_ARMOR && unit->has_subscriber(STATUS_CORE_ARMOR))
-        {
-            auto ca_status = (CoreArmor *)unit->get_subscriber(STATUS_CORE_ARMOR);
-            if (!ca_status->get_is_active())
-            {
-                vec.push_back(0);
-                continue;
-            }
-        }
-
-        vec.push_back(unit->get_subscriber_duration(status));
-    }
-}
-
-std::vector<float> serialize_cast(CastInfo cast)
-{
-    std::vector<float> ret;
-
-    Vector2i cast_offset = cast.action == END_TURN ? Vector2i(0, 0) : (cast.target - cast.caster->get_position());
-    Ref<Unit> opponent = nullptr;
-
-    for (auto u : cast.surface->get_only_units_vec())
-    {
-        if (u == cast.caster)
-        {
-            continue;
-        }
-
-        if (opponent == nullptr)
-        {
-            opponent = u;
-            continue;
-        }
-
-        std::cout << "SC: More than one opponennt during serialization.\n";
-    }
-
-    if (opponent == nullptr)
-    {
-        std::cout << "SC: Zero opponents in serialization.\n";
-        return ret;
-    }
-
-    Vector2i opponent_offset = (opponent->get_position() - cast.caster->get_position());
-    ret.push_back(cast.action == END_TURN);
-
-    for (ActionIdentifier action : action_pool)
-        ret.push_back(cast.action == action);
-
-    ret.push_back(cast_offset.x);
-    ret.push_back(cast_offset.y);
-    serialize_unit(ret, cast.caster);
-    ret.push_back(opponent_offset.x);
-    ret.push_back(opponent_offset.y);
-    serialize_unit(ret, opponent);
-    return ret;
-}
-
-std::vector<float> serialize_state(Ref<Surface> surface)
-{
-    std::vector<float> ret;
-    Ref<Unit> player = nullptr;
-    Ref<Unit> monster = nullptr;
-
-    for (auto u : surface->get_only_units_vec())
-    {
-        if (u->get_faction() == PLAYER)
-        {
-            player = u;
-        }
-
-        if (u->get_faction() == MONSTER)
-        {
-            monster = u;
-        }
-    }
-
-    if (player == nullptr || monster == nullptr)
-    {
-        std::cout << "unable to serialize state, one of the factions is missing\n";
-        return ret;
-    }
-
-    ret.push_back(player->get_position().x);
-    ret.push_back(player->get_position().y);
-    serialize_unit(ret, player);
-
-    ret.push_back(monster->get_position().x);
-    ret.push_back(monster->get_position().y);
-    serialize_unit(ret, monster);
-    return ret;
-}
-
-void serialize_action_node_to_stream(ActionCastNode *node, std::ofstream &to_file, float score)
-{
-    Vector2i cast_offset = (node->get_target() - node->caster->get_position());
-    // float score_multiplier = (node->caster->get_faction() == root->caster->get_faction()) ? 1.0 : -1.0; // invert score for enemy
-
-    Ref<Unit> parent_node_caster = nullptr;
-    for (auto u : node->parent->surface->get_only_units_vec()) // todo replace this with a less bad workaround
-    {
-        if (u->get_faction() == node->caster->get_faction())
-        {
-            parent_node_caster = u;
-            break;
-        }
-    }
-
-    if (parent_node_caster == nullptr)
-    {
-        std::cout << "parent_node_caster caster not found???\n";
-        return;
-    }
-
-    CastInfo cast_with_parent_state = {
-        node->get_action(),
-        node->parent->surface,
-        parent_node_caster,
-        node->get_target(),
-    };
-    auto data_vector = serialize_cast(cast_with_parent_state);
-
-    if (data_vector.size() != 114)
-    {
-        std::cout << "Serialize Node: vector wrong size.\n";
-        return;
-    }
-
-    for (auto x : data_vector)
-    {
-        to_file << x << ',';
-    }
-
-    to_file
-        << node->visits << ','
-        << score << '\n';
-}
-
-void serialize_tree_to_stream(const Node *node, std::ofstream &to_file, const int visits_threshold)
-{
-    if (node->visits <= visits_threshold)
-    {
-        return;
-    }
-
-    int max_visits = -1;
-
-    for (auto n : node->children)
-    {
-        max_visits = std::max(n->visits, max_visits);
-    }
-
-    for (auto n : node->children)
-    {
-        if (node->get_action() != INVALID_ACTION)
-        {
-            serialize_action_node_to_stream((ActionCastNode *)node, to_file, ((float)n->visits / (float)max_visits));
-        }
-        serialize_tree_to_stream(n, to_file, visits_threshold);
-    }
-}
 
 void populate_board_array(Ref<Surface> surface, const Vector2i &current_caster_position, std::array<float, PZ_NUM_BOARD> &arr)
 {
@@ -597,43 +503,6 @@ void draw_tree(Node *node, int depth, Faction root_faction, std::ofstream &fstre
     {
         fstream << ";\n";
     }
-}
-
-static WinPredictor *model = nullptr;
-
-float WinPredictorTreeSearch::calculate_surface_score(Ref<Surface> surface) const
-{
-    if (surface->get_remaining_factions_count() <= 1)
-    {
-        return MonteCarloTreeSearch::calculate_surface_score(surface);
-    }
-
-    std::vector<float> surface_state_vec = serialize_state(surface);
-    std::array<float, 96> arr;
-    std::copy_n(surface_state_vec.begin(), 96, arr.begin());
-
-    // TODO remove the jank below
-    if (model == nullptr)
-    {
-        std::cout << "NULL MODEL";
-        model = new WinPredictor();
-        // return 0;
-    }
-
-    if (model == nullptr)
-    {
-        std::cout << "Still bad";
-        return 0;
-    }
-
-    std::array<float, 2> result = model->predict(arr);
-    float player_winrate = 0.5 * (result[0] - result[1] + 1.0);
-
-    if (root->caster->get_faction() != PLAYER)
-    {
-        return 1.0 - player_winrate;
-    }
-    return player_winrate;
 }
 
 /*

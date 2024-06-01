@@ -48,11 +48,11 @@ class ShaclesParent : public Status
 {
 
 private:
-    Unit *shacle_target_ptr = nullptr;
+    Ref<Unit> shacle_target_ref = nullptr;
     int *link_counter = 0;
 
 public:
-    ShaclesParent(int *p_link_counter, Unit *caster_ptr, Unit *p_target_ptr, const int p_duration);
+    ShaclesParent(int *p_link_counter, Unit *caster_ptr, Ref<Unit> p_target_ref, const int p_duration);
     ~ShaclesParent();
     void clone_to(CloneContext &clone_context) const override;
 

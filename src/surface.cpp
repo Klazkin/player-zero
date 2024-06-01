@@ -116,32 +116,32 @@ PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const V
 
     cost_so_far[path_start] = 0;
     came_from[path_start] = path_start;
-    bool max_cost_reached = false;
+
+    bool goal_found = false;
 
     while (!frontier.empty())
     {
         Vector2i current = frontier.top();
         frontier.pop();
 
-        if (current == path_end || max_cost_reached)
+        if (current == path_end)
+        {
+            goal_found = true;
             break;
+        }
 
         // Special case for "to_neighbor", when we do not want to reach the target, but merely close enough
         // TODO generalise this to some "minimum distance_reached" param
         if (to_neighbor && (current - path_end).length_squared() == 1)
         {
             came_from[path_end] = current;
+            goal_found = true;
             break;
         }
 
         for (Vector2i next : get_free_neighbors(current))
         {
             int new_cost = cost_so_far[current] + 1;
-            if (new_cost > 256) // prevent infinite iteration in cases of infinite maps
-            {
-                max_cost_reached = true;
-                break;
-            }
 
             if (cost_so_far.count(next) == 0 || new_cost < cost_so_far[next])
             {
@@ -150,11 +150,16 @@ PackedVector2Array Surface::get_shortest_path(const Vector2i path_start, const V
                 came_from[next] = current;
             }
         }
+
+        if (cost_so_far[current] > 256) // prevent infinite iteration in cases of infinite maps
+        {
+            break;
+        }
     }
 
     PackedVector2Array path;
 
-    if (frontier.empty())
+    if (!goal_found)
     {
         return path; // empty path, could not reach goal
     }
@@ -264,7 +269,7 @@ bool Surface::move_element(const Vector2i &p_pos_from, const Vector2i &p_pos_to)
 
 bool Surface::is_within(const Vector2i p_pos) const
 {
-    return (0 <= p_pos.x) && (p_pos.x < SIZE) && (0 <= p_pos.y) && (p_pos.y < SIZE);
+    return Rect2i(0, 0, SIZE, SIZE).has_point(p_pos);
 }
 
 Ref<SurfaceElement> Surface::get_element(const Vector2i &p_pos) const
@@ -301,7 +306,7 @@ TypedArray<Unit> Surface::get_only_units() const
 
     for (auto pair : element_positions) // TODO check if the map contians empty cells
     {
-        if (pair.second->is_unit())
+        if (pair.second.is_valid() && !pair.second->is_dead() && pair.second->is_unit())
         {
             arr.append(pair.second);
         }
@@ -316,7 +321,7 @@ std::vector<Ref<Unit>> Surface::get_only_units_vec() const // todo this is slow
 
     for (auto pair : element_positions)
     {
-        if (pair.second->is_unit())
+        if (pair.second.is_valid() && !pair.second->is_dead() && pair.second->is_unit())
         {
             ret.push_back(pair.second);
         }
@@ -345,7 +350,13 @@ void Surface::generate_new_unit_order()
 
     for (auto pair : element_positions)
     {
-        if (pair.second->is_unit() && !as_unit_ptr(pair.second)->is_dead()) // todo once there is a unit array use it instead
+        if (!pair.second.is_valid() && pair.second.is_null())
+        {
+            std::cout << "invalid being on surface";
+            continue;
+        }
+
+        if (pair.second->is_unit() && !pair.second->is_dead()) // todo once there is a unit array use it instead
         {
             unit_order.push_back(pair.second);
         }
@@ -363,6 +374,11 @@ void Surface::start_current_units_turn()
 {
     Ref<Unit> cur_unit = turn_get_current_unit();
 
+    if (cur_unit == nullptr)
+    {
+        std::cout << "start turn on null unit\n";
+    }
+
     if (!cur_unit.is_valid() || cur_unit->is_dead() || !cur_unit->get_is_on_surface()) // recursive loop turn_next() -> _start_current_units_turn() -> turn_next()
     {
         end_current_units_turn();
@@ -372,6 +388,7 @@ void Surface::start_current_units_turn()
     emit_signal("turn_started", cur_unit);
     cur_unit->reset_stat_modifiers();
     cur_unit->trigger_on_start_turn_subscribers(); // todo unit may die from burn, in which case its turn should still be skipped
+
     if (random_events_enabled)
     {
         cur_unit->refill_hand();
@@ -454,7 +471,7 @@ TypedArray<Unit> Surface::turn_get_order() const
     return arr;
 }
 
-Ref<Unit> Surface::turn_get_current_unit() const // todo add logic to skipp dead untis
+Ref<Unit> Surface::turn_get_current_unit() const // TODO currently does not skip dead units.
 {
     if (is_unit_order_finished())
     {
@@ -472,9 +489,27 @@ void Surface::end_current_units_turn()
     {
         generate_new_unit_order();
     }
+    else
+    {
+        while (turn_get_current_unit() == nullptr) // skip null units.
+        {
+            unit_order_counter++;
+
+            if (is_unit_order_finished()) // skip results with the turn ending
+            {
+                generate_new_unit_order(); // generate "new order" and stop
+                break;
+            }
+        }
+    }
 
     if (turn_get_current_unit() != nullptr)
     {
         start_current_units_turn();
     }
+}
+
+int Surface::get_turn_counter() const
+{
+    return unit_order_counter;
 }

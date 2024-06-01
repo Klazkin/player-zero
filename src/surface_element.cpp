@@ -46,8 +46,18 @@ int SurfaceElement::get_health() const
 
 void SurfaceElement::trigger_death()
 {
+    // std::cout << "a";
+    if (death_sub == nullptr && !is_on_surface)
+    {
+        // std::cout << "b";
+        return;
+    }
+
+    // std::cout << "c";
     death_sub->on_death();
+    // std::cout << "d";
     emit_signal("killed");
+    // std::cout << "e";
 }
 
 bool SurfaceElement::get_is_on_surface() const

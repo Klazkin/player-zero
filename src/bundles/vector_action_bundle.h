@@ -17,6 +17,7 @@ public:
     bool is_finished() const override;
     void cast_next() override;
     void push_back_cast(const CastInfo &cast);
+    void save_data(const String &path, const int visits_threshold) override;
 };
 
 #endif
