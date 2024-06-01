@@ -584,14 +584,26 @@ void cast_sundive(const CastInfo &cast)
 
     for (auto v : {Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)})
     {
-        Ref<SurfaceElement> target = cast.surface->get_element(cast.target);
+        auto target = cast.target + v;
 
-        if (target->is_unit() && as_unit_ptr(target)->get_faction() == cast.caster->get_faction())
-        {
+        if (cast.surface->is_position_available(target) || !cast.surface->is_within(target))
+        { // empty
             continue;
         }
 
-        target->hit(3 + cast.caster->get_attack());
+        Ref<SurfaceElement> target_element = cast.surface->get_element(target);
+
+        if (!target_element.is_valid())
+        { // invalid
+            continue;
+        }
+
+        if (target_element->is_unit() && as_unit_ptr(target_element)->get_faction() == cast.caster->get_faction())
+        { // is an ally
+            continue;
+        }
+
+        target_element->hit(3 + cast.caster->get_attack());
     }
 }
 
@@ -959,59 +971,59 @@ std::vector<CastInfo> gen_tread_cast(const CastInfo &initial_info)
 
         position_set.insert(tread_target);
 
-        if (!initial_info.surface->is_position_available(tread_target))
-        {
-            std::cout << "Generated invalid tread position \n"
-                      << "\ttread_target " << tread_target.x << " " << tread_target.y << "\n"
-                      << "\tunit  " << u->get_position().x << " " << u->get_position().y << "\n"
-                      << "\tcaster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n";
+        // if (!initial_info.surface->is_position_available(tread_target))
+        // {
+        //     std::cout << "Generated invalid tread position \n"
+        //               << "\ttread_target " << tread_target.x << " " << tread_target.y << "\n"
+        //               << "\tunit  " << u->get_position().x << " " << u->get_position().y << "\n"
+        //               << "\tcaster  " << initial_info.caster->get_position().x << " " << initial_info.caster->get_position().y << "\n";
 
-            for (auto p : path)
-            {
-                std::cout << p.x << ":" << p.y << "\n";
-            }
-        }
+        //     for (auto p : path)
+        //     {
+        //         std::cout << p.x << ":" << p.y << "\n";
+        //     }
+        // }
 
-        if (!Action::_is_castable({initial_info.action, initial_info.surface, initial_info.caster, tread_target}))
-        {
-            std::cout << "uncastable generated\n";
-            for (auto x : path)
-            {
-                std::cout << " x: " << x.x << " y: " << x.y << "\n";
-            }
-            std::cout << "CUR: x: " << initial_info.caster->get_position().x << " y: " << initial_info.caster->get_position().y << "\n";
-            std::cout << "TAR: x: " << tread_target.x << " y: " << tread_target.y << "\n";
-            std::cout << "UNI: x: " << u->get_position().x << " y: " << u->get_position().y << "\n";
-            std::cout << "HAR: x: " << u->get_tread_distance() << "\n";
+        // if (!Action::_is_castable({initial_info.action, initial_info.surface, initial_info.caster, tread_target}))
+        // {
+        //     std::cout << "uncastable generated\n";
+        //     for (auto x : path)
+        //     {
+        //         std::cout << " x: " << x.x << " y: " << x.y << "\n";
+        //     }
+        //     std::cout << "CUR: x: " << initial_info.caster->get_position().x << " y: " << initial_info.caster->get_position().y << "\n";
+        //     std::cout << "TAR: x: " << tread_target.x << " y: " << tread_target.y << "\n";
+        //     std::cout << "UNI: x: " << u->get_position().x << " y: " << u->get_position().y << "\n";
+        //     std::cout << "HAR: x: " << u->get_tread_distance() << "\n";
 
-            for (size_t y = 0; y < 12; y++)
-            {
-                for (size_t x = 0; x < 12; x++)
-                {
-                    if (path.count(Vector2i(x, y)) > 0)
-                    {
+        //     for (size_t y = 0; y < 12; y++)
+        //     {
+        //         for (size_t x = 0; x < 12; x++)
+        //         {
+        //             if (path.count(Vector2i(x, y)) > 0)
+        //             {
 
-                        if (initial_info.surface->is_position_available(Vector2i(x, y)))
-                        {
-                            std::cout << "~";
-                        }
-                        else
-                        {
-                            std::cout << "X";
-                        }
-                    }
-                    else if (initial_info.surface->is_position_available(Vector2i(x, y)))
-                    {
-                        std::cout << ".";
-                    }
-                    else
-                    {
-                        std::cout << "#";
-                    }
-                }
-                std::cout << "\n";
-            }
-        }
+        //                 if (initial_info.surface->is_position_available(Vector2i(x, y)))
+        //                 {
+        //                     std::cout << "~";
+        //                 }
+        //                 else
+        //                 {
+        //                     std::cout << "X";
+        //                 }
+        //             }
+        //             else if (initial_info.surface->is_position_available(Vector2i(x, y)))
+        //             {
+        //                 std::cout << ".";
+        //             }
+        //             else
+        //             {
+        //                 std::cout << "#";
+        //             }
+        //         }
+        //         std::cout << "\n";
+        //     }
+        // }
 
         // for (auto n : initial_info.surface->get_free_neighbors(initial_info.caster->get_position()))
         // {

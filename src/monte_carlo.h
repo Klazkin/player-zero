@@ -17,20 +17,26 @@ public:
     int visits = 0;
     float score = 0.0; // action value
     float policy = 0.0;
+    int8_t faction = UNDEFINED;
     Node *parent = nullptr;
     std::vector<Node *> children;
     Ref<Surface> surface;
     Ref<Unit> caster;
 
-    Node(Ref<Surface> p_surface, Ref<Unit> p_caster)
-        : surface(p_surface), caster(p_caster){};
+    Node(Ref<Surface> p_surface, Ref<Unit> p_caster, const Faction p_faction)
+        : surface(p_surface), caster(p_caster), faction(p_faction){};
 
     ~Node();
     bool is_leaf() const;
     bool is_terminal() const;
+    bool is_shallow() const;
+
+    virtual void fully_expand();
     virtual ActionIdentifier get_action() const;
     virtual Vector2i get_target() const;
     void add_child(Node *child);
+    Node *get_random_child() const;
+    Faction get_caster_faction() const;
 };
 
 class ActionCastNode : public Node
@@ -45,17 +51,30 @@ public:
         const ActionIdentifier p_action,
         Ref<Surface> p_surface,
         Ref<Unit> p_caster,
-        const Vector2i p_target)
-        : action(p_action), target(p_target), Node(p_surface, p_caster){};
+        const Vector2i p_target,
+        const Faction p_faction)
+        : action(p_action), target(p_target), Node(p_surface, p_caster, p_faction){};
 
     ActionIdentifier get_action() const override;
     Vector2i get_target() const override;
+
+    void fully_expand() override;
 };
 
 class RandomHandRefillNode : public Node
 {
+private:
+    const ActionIdentifier refill_action;
+
 public:
-    RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled);
+    RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled, const Faction p_faction)
+        : refill_action(p_refilled), Node(p_surface, p_caster, p_faction){};
+};
+
+class AutoActionNode : public Node
+{
+public:
+    AutoActionNode(Ref<Surface> p_surface, Ref<Unit> p_caster, const Faction p_faction) : Node(p_surface, p_caster, p_faction){};
 };
 
 using ActionPerformerFunction = void (*)(Ref<Unit>, Ref<Surface>);

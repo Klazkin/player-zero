@@ -23,7 +23,22 @@ bool Node::is_leaf() const
 
 bool Node::is_terminal() const
 {
+    if (is_shallow())
+    {
+        std::cout << "CRITICAL: is_terminal called on a non fully expanded node!\n";
+        return false;
+    }
     return surface->get_remaining_factions_count() <= 1;
+}
+
+bool Node::is_shallow() const
+{
+    return surface.is_null();
+}
+
+void Node::fully_expand()
+{
+    // does nothing for normal nodes.
 }
 
 ActionIdentifier ActionCastNode::get_action() const
@@ -36,13 +51,49 @@ Vector2i ActionCastNode::get_target() const
     return target;
 }
 
+void ActionCastNode::fully_expand()
+{
+    if (!is_shallow())
+    {
+        return;
+    }
+
+    if (parent->is_shallow())
+    {
+        parent->fully_expand(); // recursivelly expand parent if needed.
+    }
+
+    Ref<Unit> original_next_caster = parent->surface->turn_get_current_unit();
+    surface = parent->surface->clone();
+    caster = surface->get_element(original_next_caster->get_position());
+
+    if (caster.is_null() || !caster.is_valid())
+    {
+        std::cout << "Caster clone is not valid or null " << caster.is_null() << caster.is_valid() << "\n";
+        std::cout << surface->get_only_units_vec().size() << "\n";
+        std::cout << surface->get_winner() << "\n";
+    }
+
+    CastInfo ci = {action, surface, caster, target};
+
+    if (get_caster_faction() != caster->get_faction())
+    {
+        std::cout << "CRITICAL: Faction misalingment during full expansion.";
+    }
+
+    if (Action::_is_castable(ci))
+    {
+        Action::_cast_action(ci);
+    }
+    else
+    {
+        std::cerr << "Unable to cast during full expansion of node, action: " << action << "\n";
+    }
+}
+
 ActionIdentifier Node::get_action() const
 {
     return INVALID_ACTION;
-}
-
-RandomHandRefillNode::RandomHandRefillNode(Ref<Surface> p_surface, Ref<Unit> p_caster, ActionIdentifier p_refilled) : Node(p_surface, p_caster)
-{
 }
 
 Vector2i Node::get_target() const
@@ -62,6 +113,21 @@ void Node::add_child(Node *child)
     children.push_back(child);
 }
 
+Node *Node::get_random_child() const
+{
+    if (children.size() == 0)
+    {
+        return nullptr;
+    }
+
+    return children[UtilityFunctions::randi_range(0, children.size() - 1)];
+}
+
+Faction Node::get_caster_faction() const
+{
+    return (Faction)faction;
+}
+
 float ucb(Node *node, Faction root_faction)
 {
     if (node->visits == 0)
@@ -74,7 +140,7 @@ float ucb(Node *node, Faction root_faction)
         return 0.0;
     }
 
-    float score_multipler = node->caster->get_faction() == root_faction ? 1.0 : -1.0;
+    float score_multipler = node->get_caster_faction() == root_faction ? 1.0 : -1.0;
     // float exploit = node->score * score_multipler / node->visits;
     float exploit = node->score * score_multipler;
     float explore = std::sqrt(2 * std::log(node->parent->visits) / node->visits);
@@ -134,6 +200,11 @@ Node *MonteCarloTreeSearch::select(Node *node) const
 
 Node *MonteCarloTreeSearch::expand(Node *node)
 {
+    if (node->is_shallow())
+    {
+        node->fully_expand();
+    }
+
     if (node->is_terminal())
     {
         return node;
@@ -144,70 +215,6 @@ Node *MonteCarloTreeSearch::expand(Node *node)
     if (next_caster->is_dead() || next_caster.is_null() || !next_caster.is_valid())
     {
         std::cout << "Next caster is not valid or null (" << next_caster.is_null() << next_caster.is_valid() << ") \n";
-        std::cout << "# of factions: " << node->surface->get_remaining_factions_count() << "\n";
-        std::cout << "# of units: " << node->surface->get_only_units_vec().size() << "\n";
-        std::cout << "Node: " << node->get_action() << " ";
-        std::cout << "Parent: " << node->parent->get_action() << "\n";
-        std::cout << "Node caster: " << node->caster->is_autonomous() << "\n";
-        std::cout << "history of actions:" << "\n";
-        std::cout << "NC addr: " << as_unit_ptr(next_caster) << "\n";
-        std::cout << "NU addr: " << as_unit_ptr(nullptr) << "\n";
-        std::cout << "COUNTER: " << node->surface->get_turn_counter() << "\n";
-        std::cout << "TURN: ";
-
-        auto turn_order = node->surface->turn_get_order();
-
-        for (size_t i = 0; i < turn_order.size(); i++)
-        {
-            std::cout << as_unit_ptr(turn_order[i]) << ", ";
-            /* code */
-        }
-        std::cout << "\n";
-
-        turn_order = node->parent->surface->turn_get_order();
-
-        std::cout << "COUNTER: " << node->parent->surface->get_turn_counter() << "\n";
-        std::cout << "TURN: ";
-
-        for (size_t i = 0; i < turn_order.size(); i++)
-        {
-            std::cout << as_unit_ptr(turn_order[i]) << ", ";
-            /* code */
-        }
-        std::cout << "\n";
-
-        Node *cur = node;
-        // std::unordered_set<Node *> ps;
-
-        while (cur != nullptr)
-        {
-            auto cpos = cur->caster->get_position();
-            auto tpos = cur->get_target();
-
-            std::cout << " A: " << cur->get_action()
-                      << " C: " << cpos.x << "," << cpos.y
-                      << " T: " << tpos.x << "," << tpos.y << "\n";
-
-            // if (ps.count(cur) > 0)
-            // {
-            //     std::cout << "Cyclic graph.\n";
-            //     break;
-            // }
-            // else
-            // {
-            //     ps.insert(cur);
-            // }
-
-            cur = cur->parent;
-        }
-
-        std::cout << "\n";
-        return node;
-    }
-
-    if (next_caster->is_dead())
-    {
-        std::cout << "Next caster is dead. ";
         return node;
     }
 
@@ -230,33 +237,8 @@ Node *MonteCarloTreeSearch::expand(Node *node)
     {
         for (auto original_cast : Action::generate_action_casts({action, node->surface, next_caster, Vector2i()}))
         {
-            Ref<Surface> surface_clone = node->surface->clone();
-            Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
-
-            if (next_caster_clone.is_null() || !next_caster_clone.is_valid())
-            {
-                std::cout << "Caster clone is not valid or null " << next_caster_clone.is_null() << next_caster_clone.is_valid() << "\n";
-                std::cout << surface_clone->get_only_units_vec().size() << "\n";
-                std::cout << surface_clone->get_winner() << "\n";
-            }
-
-            CastInfo clone_cast = {
-                action,
-                surface_clone,
-                next_caster_clone,
-                original_cast.target,
-            };
-
-            if (Action::_is_castable(clone_cast))
-            {
-                Action::_cast_action(clone_cast);
-                Node *new_node = new ActionCastNode(action, surface_clone, next_caster_clone, clone_cast.target);
-                node->add_child(new_node);
-            }
-            else
-            {
-                std::cerr << "Unable to cast during mcts, action: " << action << "\n";
-            }
+            Node *new_node = new ActionCastNode(action, nullptr, nullptr, original_cast.target, next_caster->get_faction());
+            node->add_child(new_node);
         }
     }
 
@@ -266,7 +248,7 @@ Node *MonteCarloTreeSearch::expand(Node *node)
         return node;
     }
 
-    return node->children[0];
+    return node->get_random_child();
 }
 
 float MonteCarloTreeSearch::simulate(Node *node)
@@ -275,6 +257,11 @@ float MonteCarloTreeSearch::simulate(Node *node)
     {
         std::cerr << "null node in tree";
         return 0;
+    }
+
+    if (node->is_shallow())
+    {
+        node->fully_expand();
     }
 
     if (node->caster == nullptr) // caster is nullptr if parent turn_get_current_unit is nullptr, i.e. no units left on surface
@@ -301,7 +288,6 @@ float MonteCarloTreeSearch::simulate(Node *node)
             break;
         }
 
-        // std::cout << "{";
         if (current_unit->is_autonomous())
         {
             Actor::perfrom_auto_actions_for_turn(current_unit, rollout_surface);
@@ -310,7 +296,6 @@ float MonteCarloTreeSearch::simulate(Node *node)
         {
             performer_func(current_unit, rollout_surface);
         }
-        // std::cout << "}";
     }
 
     return calculate_surface_score(rollout_surface);
@@ -329,29 +314,13 @@ void MonteCarloTreeSearch::backpropagate(Node *node, const float score)
 
 void MonteCarloTreeSearch::run(const int iterations)
 {
-
-    // auto myid = this_thread::get_id();
-    // std::stringstream ss;
-    // ss << myid;
-    // std::string thread_id_str = ss.str();
-    // std::string filename = "R:\\SERB_log_" + thread_id_str + ".txt";
-    // std::ofstream file(filename);
-
     for (int i = 0; i < iterations; ++i)
     {
-
-        // file << 'S' << std::flush;
         Node *selected_node = select(root);
-        // file << 'E' << std::flush;
         Node *expanded_node = expand(selected_node);
-        // file << 'R' << std::flush;
         float score = simulate(expanded_node);
-        // file << 'B' << std::flush;
         backpropagate(expanded_node, score);
     }
-
-    // file << "F" << std::flush;
-    // file.close();
 }
 
 Node *MonteCarloTreeSearch::expand_random(Node *node, bool from_blooddrawing, const Ref<Unit> next_caster)
@@ -367,7 +336,7 @@ Node *MonteCarloTreeSearch::expand_random(Node *node, bool from_blooddrawing, co
         Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
         next_caster_clone->refill_hand(action);
 
-        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
+        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action, next_caster_clone->get_faction());
         node->add_child(child);
     }
 
@@ -377,11 +346,11 @@ Node *MonteCarloTreeSearch::expand_random(Node *node, bool from_blooddrawing, co
         Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
         next_caster_clone->refill_hand(INVALID_ACTION);
 
-        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION);
+        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION, next_caster_clone->get_faction());
         node->add_child(child);
     }
 
-    return node->children[0];
+    return node->get_random_child();
 }
 
 Node *MonteCarloTreeSearch::expand_auto(Node *node, const Ref<Unit> next_caster)
@@ -396,7 +365,7 @@ Node *MonteCarloTreeSearch::expand_auto(Node *node, const Ref<Unit> next_caster)
         ab->cast_next();
     }
 
-    Node *next_node = new ActionCastNode(END_TURN, surface_clone, next_caster_clone, Vector2i());
+    Node *next_node = new AutoActionNode(surface_clone, next_caster_clone, next_caster_clone->get_faction());
     node->add_child(next_node);
     return next_node;
 }
@@ -533,7 +502,7 @@ float PlayerZeroTreeSearch::selection_policy(Node *node, Faction root_faction) c
     {
         return cpuct * node->policy * std::sqrt(node->parent->visits + EPS);
     }
-    float score_multipler = node->caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
+    float score_multipler = node->get_caster_faction() == root->caster->get_faction() ? 1.0 : -1.0;
     return score_multipler * node->score + cpuct * node->policy * std::sqrt(node->parent->visits) / (1 + node->visits);
 }
 
@@ -557,20 +526,15 @@ int get_cast_index(const CastInfo &ci)
 
 Node *PlayerZeroTreeSearch::expand(Node *node)
 {
+    if (node->is_shallow())
+    {
+        node->fully_expand();
+    }
+
     if (node->is_terminal())
     {
         node->score = calculate_surface_score(node->surface);
         return node;
-    }
-
-    if (node->get_action() == END_TURN)
-    {
-        return expand_random(node, false);
-    }
-
-    if (node->get_action() == BLOODDRAWING)
-    {
-        return expand_random(node, true);
     }
 
     Ref<Unit> next_caster = node->surface->turn_get_current_unit(); // should never be a dead unit!!!
@@ -585,6 +549,22 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
     {
         std::cout << "Next caster is dead. ";
         return node;
+    }
+
+    if (next_caster->is_autonomous())
+    {
+        expand_auto(node, next_caster);
+        return node;
+    }
+
+    if (node->get_action() == END_TURN)
+    {
+        return expand_random(node, false);
+    }
+
+    if (node->get_action() == BLOODDRAWING)
+    {
+        return expand_random(node, true);
     }
 
     std::array<float, PZ_NUM_POLICY> mask = {};
@@ -657,50 +637,33 @@ Node *PlayerZeroTreeSearch::expand(Node *node)
 
     for (auto ci : possible_casts)
     {
-        Ref<Surface> surface_clone = node->surface->clone();
-        Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
+        Node *new_node = new ActionCastNode(ci.action, nullptr, nullptr, ci.target, ci.caster->get_faction());
+        float action_policy = prediction.policy[get_cast_index(ci)];
 
-        CastInfo clone_cast = {
-            ci.action,
-            surface_clone,
-            next_caster_clone,
-            ci.target,
-        };
-
-        if (Action::_is_castable(clone_cast))
+        if (action_policy >= 1.01 || action_policy < 0.0)
         {
-            Action::_cast_action(clone_cast);
-            Node *new_node = new ActionCastNode(ci.action, surface_clone, next_caster_clone, clone_cast.target);
-
-            float action_policy = prediction.policy[get_cast_index(ci)];
-            if (action_policy >= 1.01 || action_policy < 0.0)
+            std::cout << "action_policy of " << action_policy << "! sum: " << policy_sum << "\n";
+            std::ofstream fstream;
+            fstream.open(std::string("board_input_large_policy.txt"), std::ios::app);
+            fstream << "Policy: " << action_policy << "\n";
+            fstream << "Action: " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "\n";
+            serialize_node(fstream, node, root->caster->get_faction(), false, 0);
+            fstream << "0\n0\n0\nBoard:\n";
+            for (auto b : board)
             {
-                std::cout << "action_policy of " << action_policy << "! sum: " << policy_sum << "\n";
-                std::ofstream fstream;
-                fstream.open(std::string("board_input_large_policy.txt"), std::ios::app);
-                fstream << "Policy: " << action_policy << "\n";
-                fstream << "Action: " << ci.action << " at " << ci.target.x << ":" << ci.target.y << "\n";
-                serialize_node(fstream, node, root->caster->get_faction(), false, 0);
-                fstream << "0\n0\n0\nBoard:\n";
-                for (auto b : board)
-                {
-                    fstream << b << ",";
-                }
-                fstream << "\nPolicy:\n";
-                for (auto p : prediction.policy)
-                {
-                    fstream << p << ",";
-                }
-                fstream.close();
-                exit(10132);
+                fstream << b << ",";
             }
-            new_node->policy = action_policy;
-            node->add_child(new_node);
+            fstream << "\nPolicy:\n";
+            for (auto p : prediction.policy)
+            {
+                fstream << p << ",";
+            }
+            fstream.close();
+            exit(10132);
         }
-        else
-        {
-            std::cerr << "Unable to cast during mcts, action: " << ci.action << "\n";
-        }
+
+        new_node->policy = action_policy;
+        node->add_child(new_node);
     }
 
     float score_multipler = next_caster->get_faction() == root->caster->get_faction() ? 1.0 : -1.0;
@@ -729,7 +692,7 @@ Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
         Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
         next_caster_clone->refill_hand(action);
 
-        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action);
+        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, action, next_caster_clone->get_faction());
         node->add_child(child);
     }
 
@@ -739,7 +702,7 @@ Node *PlayerZeroTreeSearch::expand_random(Node *node, bool from_blooddrawing)
         Ref<Unit> next_caster_clone = as_unit_ptr(surface_clone->get_element(next_caster->get_position()));
         next_caster_clone->refill_hand(INVALID_ACTION);
 
-        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION);
+        Node *child = new RandomHandRefillNode(surface_clone, next_caster_clone, INVALID_ACTION, next_caster_clone->get_faction());
         node->add_child(child);
     }
 
@@ -790,6 +753,11 @@ float clamp_score(float score)
 
 void PlayerZeroTreeSearch::serialize_node(std::ofstream &to_file, Node *node, const Faction root_faction, const bool propagate, const int visits_threshold)
 {
+    if (node->is_shallow())
+    {
+        return;
+    }
+
     to_file << node->surface->get_element_positions().size() << '\n';
 
     for (auto key_val_pair : node->surface->get_element_positions())

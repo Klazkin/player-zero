@@ -22,7 +22,7 @@ public:
         Ref<Surface> surface_clone = surface->clone();
         surface_clone->set_random_events_enabled(false);
         Ref<Unit> caster_clone = surface_clone->get_element(caster->get_position());
-        root = new Node(surface_clone, caster_clone);
+        root = new Node(surface_clone, caster_clone, caster_clone->get_faction());
         current_node = root;
     };
 
